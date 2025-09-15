@@ -2,17 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-:root{ --bg: #0b0f1a; --muted:#93a1be; }
-html,body{ height:100%; }
-body{ @apply bg-white text-slate-900 dark:bg-[#0b0f1a] dark:text-slate-50;}
-.card{ @apply rounded-2xl border border-white/10 bg-white/70 dark:bg-white/5 backdrop-blur-md; }
-.btn{ @apply px-4 py-2 rounded-xl font-semibold border border-white/20 hover:shadow-glow transition; }
-.hero-title{ @apply text-4xl md:text-6xl font-extrabold tracking-tight; }
-.hero-sub{ @apply text-slate-600 dark:text-slate-300; }
-.grid-auto{ @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
-.small{ @apply text-xs text-slate-500 dark:text-slate-400; }
+/* safety-утиліта, якщо з якоїсь причини tailwind .grid не підхоплюється */
+@layer utilities {
+  .tt-grid { display: grid; }
+}
 
-table { @apply w-full text-sm; }
-th, td { @apply text-left px-2 py-2; }
-thead tr { @apply border-b border-white/10; }
-tbody tr { @apply border-b border-white/10; }
+
+/* ============ BASE ============ */
+@layer base {
+  :root {
+    --bg: #0b0f1a;
+    --fg: #e6edf6;
+    --muted: #93a1be;
+    --color-primary: #60a5fa;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    @apply bg-white text-slate-900 dark:bg-[var(--bg)] dark:text-slate-100;
+  }
+
+  /* Посилання — як звичайний текст, без синього/підкреслення */
+  a {
+    @apply text-inherit no-underline;
+  }
+  a:hover {
+    @apply underline decoration-1 decoration-white/40 dark:decoration-white/30;
+  }
+}
+
+/* ============ COMPONENTS ============ */
+@layer components {
+  .card {
+    @apply rounded-2xl border border-white/10 bg-white/70 dark:bg-white/5 backdrop-blur-md;
+  }
+
+  .btn {
+    @apply px-4 py-2 rounded-xl font-semibold border border-white/20 transition
+           text-slate-900 dark:text-slate-100
+           bg-white/70 dark:bg-white/5;
+  }
+  .btn:hover {
+    box-shadow:
+      0 8px 24px -12px rgba(0,0,0,.35),
+      0 0 0 1px rgba(255,255,255,.08),
+      0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
+  }
+
+  .hero-title { @apply text-4xl md:text-6xl font-extrabold tracking-tight; }
+  .hero-sub   { @apply text-slate-600 dark:text-slate-300; }
+
+  .grid-auto  { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+  .small      { @apply text-xs text-slate-500 dark:text-slate-400; }
+
+  /* !!! ВАЖЛИВО: таблиці стилізуємо ТІЛЬКИ в контейнері .tt-table */
+  .tt-table table { @apply w-full text-sm; }
+  .tt-table th, .tt-table td { @apply text-left px-2 py-2; }
+  .tt-table thead tr { @apply border-b border-white/10; }
+  .tt-table tbody tr { @apply border-b border-white/10; }
+}
+
+/* ============ UTILITIES (опційно) ============ */
+@layer utilities {
+  .shadow-glow {
+    box-shadow:
+      0 8px 24px -12px rgba(0,0,0,.35),
+      0 0 0 1px rgba(255,255,255,.08),
+      0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
+  }
+}

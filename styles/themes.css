@@ -1,0 +1,197 @@
+:root {
+  --bg: #0b0f14;
+  --fg: #e7edf6;
+  --muted: #a7b0bf;
+
+  --card-bg: rgba(255,255,255,0.04);
+  --card-ring: rgba(255,255,255,0.10);
+  --card-shadow: 0 10px 50px -20px rgba(0,0,0,.6);
+
+  --color-primary: #60a5fa;
+
+  /* графіки */
+  --chart-line: #60a5fa;
+  --chart-dot: #93c5fd;
+  --chart-grid: rgba(148,163,184,.18);
+  --chart-win: #34d399;
+  --chart-loss: #fb7185;
+  --chart-legend: #a8b1c5;
+  --chart-tooltip-bg: rgba(15,23,42,.92);
+  --chart-tooltip-border: rgba(255,255,255,.10);
+
+  /* кнопки/меню */
+  --btn-bg: linear-gradient(135deg, #2dd4bf, #60a5fa);
+  --btn-fg: #0b1220;
+  --menu-muted: rgba(255,255,255,.45);
+
+  --bg-image: url("/themes/bg-light.webp");
+}
+
+html, body, #__next { min-height: 100%; }
+body {
+  color: var(--fg);
+  background: var(--bg);
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* поверхня */
+.surface {
+  background: var(--card-bg);
+  border: 1px solid var(--card-ring);
+  box-shadow: var(--card-shadow);
+  color: var(--fg);
+}
+
+/* ===== Теми ===== */
+
+/* Light */
+html[data-theme="light"] {
+  --bg: #f7fafc;
+  --fg: #0b0f14;
+  --muted: #5b6675;
+  --card-bg: rgba(255,255,255,0.75);
+  --card-ring: rgba(15,23,42,0.08);
+  --color-primary: #22c55e;
+
+  --btn-bg: linear-gradient(135deg, #22c55e, #60a5fa);
+  --btn-fg: #0b0f14;
+
+  --bg-image: url("/themes/bg-light.webp");
+}
+
+/* Dark */
+html[data-theme="dark"] {
+  --bg: #0b0f14;
+  --fg: #e7edf6;
+  --muted: #9aa6b2;
+  --card-bg: rgba(255,255,255,0.04);
+  --card-ring: rgba(255,255,255,0.08);
+  --color-primary: #60a5fa;
+
+  --btn-bg: linear-gradient(135deg, #60a5fa, #a78bfa);
+  --btn-fg: #0b1220;
+
+  --bg-image: url("/themes/bg-dark.webp");
+}
+
+/* Neon */
+html[data-theme="neon"] {
+  --bg: #06070a;
+  --fg: #e9fbff;
+  --muted: #8fb0c0;
+  --card-bg: rgba(18,18,28,0.85);
+  --card-ring: rgba(0,240,255,0.18);
+  --color-primary: #00f0ff;
+
+  --btn-bg: linear-gradient(135deg, #00f0ff, #ff00ea);
+  --btn-fg: #0b1020;
+
+  --bg-image: url("/themes/bg-neon.webp");
+}
+
+/* Pastel */
+html[data-theme="pastel"] {
+  --bg: #0e1116;
+  --fg: #ea7fd4;
+  --muted: #a9b3c3;
+  --card-bg: rgba(255,255,255,0.05);
+  --card-ring: rgba(255,255,255,0.10);
+  --color-primary: #a78bfa;
+
+  --btn-bg: linear-gradient(135deg, #a78bfa, #f0abfc);
+  --btn-fg: #0e0a12;
+
+  --bg-image: url("/themes/bg-pastel.webp");
+}
+
+/* Solaris */
+html[data-theme="solaris"] {
+  --bg: #120a05;
+  --fg: #fff3d6;
+  --muted: #ffdca8;
+  --card-bg: rgba(255,255,255,0.04);
+  --card-ring: rgba(255, 239, 199, 0.16);
+  --color-primary: #ffb020;
+
+  --btn-bg: linear-gradient(135deg, #ffb703, #fb7185);
+  --btn-fg: #100b06;
+
+  --chart-line: #ffb020;
+  --chart-win: #22d3ee;
+  --chart-loss: #fb7185;
+
+  --bg-image: url("/themes/bg-solaris.png");
+}
+
+/* Cyberpunk */
+html[data-theme="cyberpunk"] {
+  --bg: #060815;
+  --fg: #e5faff;
+  --muted: #9ad7e0;
+  --card-bg: rgba(10, 12, 24, 0.82);
+  --card-ring: rgba(0, 240, 255, 0.22);
+  --color-primary: #00f0ff;
+
+  --btn-bg: linear-gradient(135deg, #00e7ff, #ff00cc);
+  --btn-fg: #061015;
+
+  --chart-line: #00e7ff;
+  --chart-win: #10b981;
+  --chart-loss: #f43f5e;
+
+  --bg-image: url("/themes/bg-cyberpunk.png");
+}
+
+/* Oceanic */
+html[data-theme="oceanic"] {
+  --bg: #071129;
+  --fg: #eff6ff;
+  --muted: #bcd7ff;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --card-ring: rgba(191, 219, 254, 0.18);
+  --color-primary: #22d3ee;
+
+  --btn-bg: linear-gradient(135deg, #34d399, #60a5fa);
+  --btn-fg: #061215;
+
+  --chart-line: #60a5fa;
+
+  --bg-image: url("/themes/bg-oceanic.png");
+}
+
+/* Sakura */
+html[data-theme="sakura"] {
+  --bg: #3f1e2d;
+  --fg: #fff1f2;
+  --muted: #ffcfe0;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-ring: rgba(255, 228, 230, 0.18);
+  --color-primary: #f472b6;
+
+  --btn-bg: linear-gradient(135deg, #f472b6, #fca5a5);
+  --btn-fg: #3a0a14;
+
+  --chart-line: #f472b6;
+
+  --bg-image: url("/themes/bg-sakura.png");
+}
+
+/* Matrix */
+html[data-theme="matrix"] {
+  --bg: #04180a;
+  --fg: #ecfdf5;
+  --muted: #86efac;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --card-ring: rgba(52, 211, 153, 0.25);
+  --color-primary: #22c55e;
+
+  --btn-bg: linear-gradient(135deg, #22c55e, #16a34a);
+  --btn-fg: #04120a;
+
+  --chart-line: #22c55e;
+
+  --bg-image: url("/themes/bg-matrix.png");
+}

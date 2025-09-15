@@ -1,0 +1,41 @@
+/* Toolbar */
+.tt-topbar { position: sticky; top: 0; z-index: 50; padding: 10px 0; backdrop-filter: blur(10px); }
+.tt-topbar-inner { max-width: 1120px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 16px; justify-content: space-between; }
+.tt-brand { display: inline-flex; gap: 10px; color: var(--fg); text-decoration: none; }
+.tt-brand-txt { font-weight: 700; }
+
+/* Buttons */
+.tt-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 14px; border-radius: 12px;
+  background: var(--btn-bg); color: var(--btn-fg);
+  border: 1px solid color-mix(in oklab, var(--btn-fg) 10%, transparent);
+  box-shadow: 0 8px 22px -12px color-mix(in oklab, var(--btn-fg) 28%, transparent);
+}
+.tt-dd-caret { transform: translateY(-1px); }
+
+/* Dropdown menu */
+.tt-dd { position: relative; }
+.tt-menu {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 60;
+  min-width: 180px; max-width: 240px; padding: 6px; border-radius: 14px;
+  background: var(--btn-bg); color: var(--btn-fg);
+  border: 1px solid color-mix(in oklab, var(--btn-fg) 10%, transparent);
+  box-shadow: 0 16px 30px -12px color-mix(in oklab, var(--btn-fg) 25%, transparent);
+  backdrop-filter: blur(6px);
+}
+.tt-option {
+  width: 100%; display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 8px;
+  text-align: left; padding: 9px 10px; border-radius: 10px;
+  background: color-mix(in oklab, var(--btn-bg) 92%, transparent);
+  color: var(--btn-fg); border: 1px solid transparent;
+}
+.tt-option-dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; opacity: .6; }
+.tt-option:hover { background: color-mix(in oklab, var(--btn-bg) 80%, var(--btn-fg) 10%); }
+.tt-option.is-active { background: color-mix(in oklab, var(--btn-bg) 72%, var(--btn-fg) 14%); }
+.tt-option.is-disabled {
+  color: var(--menu-muted);
+  border-color: color-mix(in oklab, var(--btn-fg) 12%, transparent);
+  background: color-mix(in oklab, var(--btn-bg) 94%, transparent);
+  cursor: not-allowed;
+}
