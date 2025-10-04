@@ -38,7 +38,7 @@ type Trade = {
   screenshot_url: string | null;
 };
 
-/* css var helper */
+/* css var helper (залишаю, але більше не використовуємо для кольорів графіків) */
 function cssVar(name: string) {
   if (typeof window === "undefined") return "";
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -152,6 +152,37 @@ export default function StrategyPage() {
     };
   }, [trades]);
 
+  const topTrades = useMemo(() => {
+    if (!trades.length) return { winners: [] as Trade[], losers: [] as Trade[] };
+
+    const normalized = trades
+      .map((t) => ({ ...t, _res: Number(t.result ?? 0) }))
+      .filter((t) => Number.isFinite(t._res) && t._res !== 0);
+
+    const winners = [...normalized]
+      .filter((t) => t._res > 0)
+      .sort((a, b) => b._res - a._res)
+      .slice(0, 5) as Trade[];
+
+    const losers = [...normalized]
+      .filter((t) => t._res < 0)
+      .sort((a, b) => a._res - b._res)
+      .slice(0, 5) as Trade[];
+
+    return { winners, losers };
+  }, [trades]);
+
+
+  // ОДИН ГОРИЗОНТАЛЬНИЙ РЯД: спочатку 3 кращі (green), потім 3 гірші (red)
+  const topRow = useMemo(
+    () =>
+      [
+        ...topTrades.winners.map((t) => ({ ...t, _kind: "win" as const })),
+        ...topTrades.losers.map((t) => ({ ...t, _kind: "loss" as const })),
+      ],
+    [topTrades.winners, topTrades.losers]
+  );
+
   const pieData = useMemo(
     () => [
       { name: "Win", value: stats.wins },
@@ -165,20 +196,17 @@ export default function StrategyPage() {
     [trades]
   );
 
-  /* CHART VARS from theme */
-  const chartVars = useMemo(
-    () => ({
-      line: cssVar("--chart-line") || "#60a5fa",
-      dot: cssVar("--chart-dot") || "#93c5fd",
-      grid: cssVar("--chart-grid") || "rgba(148,163,184,.18)",
-      win: cssVar("--chart-win") || "#34d399",
-      loss: cssVar("--chart-loss") || "#fb7185",
-      legend: cssVar("--chart-legend") || "#a8b1c5",
-      tbg: cssVar("--chart-tooltip-bg") || "rgba(15,23,42,.92)",
-      tbd: cssVar("--chart-tooltip-border") || "rgba(255,255,255,.10)",
-    }),
-    [theme]
-  );
+  /* CHART VARS — тепер це прямі CSS var, щоб теми підхоплювались миттєво */
+  const chartVars = {
+    line: "var(--chart-line)",
+    dot: "var(--chart-dot)",
+    grid: "var(--chart-grid)",
+    win: "var(--chart-win)",
+    loss: "var(--chart-loss)",
+    legend: "var(--chart-legend)",
+    tbg: "var(--chart-tooltip-bg)",
+    tbd: "var(--chart-tooltip-border)",
+  } as const;
 
   const tooltipStyle: React.CSSProperties = {
     background: chartVars.tbg,
@@ -294,7 +322,10 @@ export default function StrategyPage() {
                 }}
                 isAnimationActive
               />
-              <Legend verticalAlign="bottom" wrapperStyle={{ color: chartVars.legend, fontSize: 12, paddingTop: 6 }} />
+              <Legend
+                verticalAlign="bottom"
+                wrapperStyle={{ color: "var(--chart-legend)", fontSize: 12, paddingTop: 6 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -325,7 +356,10 @@ export default function StrategyPage() {
                   <Cell key={t.id} fill={t.result >= 0 ? `url(#${gid("win")})` : `url(#${gid("loss")})`} />
                 ))}
               </Bar>
-              <Legend verticalAlign="bottom" wrapperStyle={{ color: chartVars.legend, fontSize: 12, paddingTop: 6 }} />
+              <Legend
+                verticalAlign="bottom"
+                wrapperStyle={{ color: "var(--chart-legend)", fontSize: 12, paddingTop: 6 }}
+              />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -363,22 +397,98 @@ export default function StrategyPage() {
                       y="50%"
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      className="fill-white"
+                      fill="var(--donut-center, var(--fg))"
                     >
-                      <tspan className="text-2xl font-semibold">{stats.winRate.toFixed(0)}%</tspan>
-                      <tspan x="50%" dy="1.2em" className="text-xs opacity-70">
-                        winrate
+                      <tspan style={{ fontSize: "32px", fontWeight: 600 }}>
+                        {stats.winRate.toFixed(0)}%
                       </tspan>
                     </text>
                   )}
                 />
               </Pie>
-              <Legend verticalAlign="bottom" wrapperStyle={{ color: chartVars.legend, fontSize: 12, paddingTop: 6 }} />
+              <Legend
+                verticalAlign="bottom"
+                wrapperStyle={{ color: "var(--chart-legend)", fontSize: 12, paddingTop: 6 }}
+              />
               <Tooltip contentStyle={tooltipStyle} />
             </PieChart>
           </ResponsiveContainer>
         </Card>
       </section>
+
+        {/* TOP WIN / LOSS */}
+        <section className="max-w-7xl mx-auto px-5 mt-6">
+          <Card title="Топ-5 трейдів: гірші (ліворуч) і кращі (праворуч)">
+            <div className="w-full flex flex-row flex-nowrap justify-between items-start gap-8">
+              {/* Losers (ліворуч) */}
+              <div className="basis-1/2 shrink-0 min-w-0">
+                <div className="text-sm opacity-75 mb-2">Гірші</div>
+                <ul className="space-y-2">
+                  {topTrades.losers.length ? (
+                    topTrades.losers.map((t) => (
+                      <li
+                        key={`l-${t.id}`}
+                        className="flex flex-col rounded-2xl px-3 py-2"
+                        style={{
+                          background: "var(--card-bg)",
+                          border: "1px solid var(--card-ring)",
+                        }}
+                      >
+                        <div
+                          className="text-sm font-medium tracking-wide"
+                          style={{ fontSize: "0.88rem" }}
+                        >
+                          {t.ticker} — {t.trade_date.slice(0, 10)}
+                        </div>
+                        <div className="opacity-75 text-xs">
+                          Результат:{" "}
+                          <span style={{ color: "var(--chart-loss)" }}>
+                            {fmt(Number(t.result ?? 0))}
+                          </span>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <div className="text-sm opacity-60">Немає від’ємних трейдів</div>
+                  )}
+                </ul>
+              </div>
+              {/* Winners (праворуч) */}
+              <div className="basis-1/2 shrink-0 min-w-0">
+                <div className="text-sm opacity-75 mb-2">Кращі</div>
+                <ul className="space-y-2">
+                  {topTrades.winners.length ? (
+                    topTrades.winners.map((t) => (
+                      <li
+                        key={`w-${t.id}`}
+                        className="flex flex-col rounded-2xl px-3 py-2"
+                        style={{
+                          background: "var(--card-bg)",
+                          border: "1px solid var(--card-ring)",
+                        }}
+                      >
+                        <div
+                          className="text-sm font-medium tracking-wide"
+                          style={{ fontSize: "0.88rem" }}
+                        >
+                          {t.ticker} — {t.trade_date.slice(0, 10)}
+                        </div>
+                        <div className="opacity-75 text-xs">
+                          Результат:{" "}
+                          <span style={{ color: "var(--chart-win)" }}>
+                            {fmt(Number(t.result ?? 0))}
+                          </span>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <div className="text-sm opacity-60">Немає позитивних трейдів</div>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </Card>
+        </section>
 
       {/* ADD FORM */}
       <section className="max-w-7xl mx-auto px-5 mt-8">
@@ -511,7 +621,8 @@ function StatTile({
   sub?: string;
   colored?: boolean;
 }) {
-  const num = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
+  const num =
+    typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
   const color =
     colored && !Number.isNaN(num)
       ? num > 0
@@ -520,6 +631,7 @@ function StatTile({
         ? "var(--chart-loss)"
         : "var(--fg)"
       : "var(--fg)";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -527,12 +639,37 @@ function StatTile({
       viewport={{ once: true }}
       transition={{ duration: 0.35 }}
       className="rounded-3xl p-5 surface"
+      style={{
+        boxShadow: "0 6px 24px rgba(0,0,0,.15)",
+      }}
     >
       <div className="text-sm opacity-75">{title}</div>
-      <div className="text-3xl font-semibold mt-1 tracking-tight" style={{ color }}>
+      {/* більш виразне значення */}
+      <div
+        className="mt-1 tracking-tight"
+        style={{
+          color,
+          fontSize: "clamp(28px, 4vw, 30px)",
+          fontWeight: 800,
+          letterSpacing: "-0.02em",
+          lineHeight: 1.1,
+          fontVariantNumeric: "tabular-nums lining-nums",
+          textShadow: "0 1px 0 rgba(0,0,0,.12)",
+        }}
+      >
         {value}
       </div>
-      {sub ? <div className="text-xs opacity-75 mt-1">{sub}</div> : null}
+      {sub ? (
+        <div
+          className="mt-2"
+          style={{
+            fontSize: 12,
+            opacity: 0.75,
+          }}
+        >
+          {sub}
+        </div>
+      ) : null}
     </motion.div>
   );
 }
@@ -546,4 +683,8 @@ function fmt(n: number) {
 function fmtRatio(n: number) {
   if (!isFinite(n) || n === 0) return "—";
   return `${n.toFixed(2)}×`;
+}
+function fmtDate(s: string) {
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? String(s).slice(0, 10) : d.toISOString().slice(0, 10);
 }

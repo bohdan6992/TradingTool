@@ -1,17 +1,24 @@
+// pages/_app.tsx
 import type { AppProps, AppContext } from "next/app";
+import Script from "next/script";
+
 import "@/styles/themes.css";
 import "@/styles/topbar.css";
-import "@/styles/layout.css";   // ⬅ новий рядок
+import "@/styles/layout.css";
 
+// pages/_app.tsx
+import UiProvider from "@/components/UiProvider"; // ✅ default import
 
-import TopBar from "@/components/TopBar";
-import { UiProvider } from "@/components/UiProvider";
+// Якщо TopBar раптом не експортується (або шлях зіб'ється) — не впадемо:
+import TopBarMaybe from "@/components/TopBar";
 
-import { parse as parseCookie } from "cookie";
+// Страхувальний компонент, якщо TopBar = undefined
+const SafeTopBar: React.FC = (TopBarMaybe as any) || (() => null);
 
 type ThemeKey =
   | "light" | "dark" | "neon" | "pastel"
-  | "solaris" | "cyberpunk" | "oceanic" | "sakura" | "matrix";
+  | "solaris" | "cyberpunk" | "oceanic" | "sakura" | "matrix" | "asher" | "inferno"
+  | "aurora" | "desert" | "midnight" | "forest" | "candy" | "monochrome";
 
 type LangKey = "UA" | "EN" | "UK";
 
@@ -23,24 +30,35 @@ type MyAppProps = AppProps & {
 export default function MyApp({
   Component,
   pageProps,
-  initialTheme,
-  initialLang,
+  initialTheme = "light",
+  initialLang = "UA",
 }: MyAppProps) {
   return (
-    <UiProvider initialTheme={initialTheme} initialLang={initialLang}>
-      <TopBar />
-      <Component {...pageProps} />
-    </UiProvider>
+    <>
+      {/* tv.js вантажиться один раз глобально */}
+      <Script
+        id="tv-js"
+        src="https://s3.tradingview.com/tv.js"
+        strategy="afterInteractive"
+        crossOrigin="anonymous"
+      />
+
+      <UiProvider initialTheme={initialTheme} initialLang={initialLang}>
+        <SafeTopBar />
+        <Component {...pageProps} />
+      </UiProvider>
+    </>
   );
 }
 
-// SSR: читаємо cookie і синхронізуємо початкову тему/мову (прибирає гідраційні помилки)
+// SSR: зчитуємо cookie, щоб не було мерехтіння теми/мови
+import { parse as parseCookie } from "cookie";
 MyApp.getInitialProps = async (appCtx: AppContext) => {
   const cookieStr = appCtx.ctx.req?.headers?.cookie ?? "";
   const parsed = cookieStr ? parseCookie(cookieStr) : {};
 
   const initialTheme = (parsed["tt-theme"] as ThemeKey) || "light";
-  const initialLang = (parsed["tt-lang"] as LangKey) || "UA";
+  const initialLang  = (parsed["tt-lang"]  as LangKey)  || "UA";
 
   return { pageProps: {}, initialTheme, initialLang };
 };

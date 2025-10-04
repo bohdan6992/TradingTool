@@ -1,25 +1,182 @@
-import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
-import StrategyCard from "@/components/StrategyCard";
-import { useEffect, useState } from "react";
+// pages/index.tsx
+import { useEffect, useMemo, useState } from "react";
 
-export default function Home(){
-  const [strategies, setStrategies] = useState<any[]>([]);
-  useEffect(()=>{
-    fetch("/api/strategies").then(r=>r.json()).then(setStrategies).catch(console.error);
-  },[]);
+import QuarterCalendar from "@/components/QuarterCalendar";
+import NYTopInfo from "@/components/NYTopInfo";
+import EarningsTwoDays from "@/components/EarningsTwoDays";
+import BenchmarksTable from "@/components/BenchmarksTable";
+import SectorHeatmap from "@/components/SectorHeatmap";
+import NewsSentimentBadge from "@/components/NewsSentimentBadge";
+import BenchmarksStrip from "@/components/BenchmarksStrip";
+
+type NewsItem = {
+  id: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  source: string;
+  categories?: string[];
+};
+
+type EventItem = {
+  id: string;
+  title: string;
+  date: string;
+  time?: string;
+  ticker?: string;
+  tags?: string[];
+  rank?: "S" | "A" | "B" | "F" | "N";
+  note?: string;
+  link?: string;
+};
+
+export default function Home() {
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loadingNews, setLoadingNews] = useState(true);
+
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("/api/news/investing?limit=40");
+        const data = await r.json();
+        setNews(data.items || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingNews(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("/api/events");
+        const data = await r.json();
+        setEvents(data.items || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingEvents(false);
+      }
+    })();
+  }, []);
+
+  const tickerItems = useMemo(() => {
+    const top = news.slice(0, 12);
+    return [...top, ...top];
+  }, [news]);
+
   return (
     <div>
-      <Navbar/>
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        <Hero/>
+        {/* ====== ГОДИННИК NY + ЦЬОГО ДНЯ ====== */}
+        <section><NYTopInfo /></section>
+
+        {/* ====== БЕНЧМАРКИ ПІД ГОДИННИКОМ ====== */}
         <section>
-          <h2 className="text-2xl font-bold mb-3">Стратегії</h2>
-          <div className="grid-auto">
-            {strategies.map((s:any)=>(<StrategyCard key={s.id} s={s}/>))}
+          <BenchmarksStrip />
+          {/* Якщо хочеш ще й табличний вигляд:
+          <div className="mt-4"><BenchmarksTable /></div> */}
+        </section>
+
+        {/* === SECTOR HEATMAP === */}
+        <section>
+          <SectorHeatmap
+            height={460}
+            locale="uk"
+            defaultDataSource="SPX500"
+            defaultGrouping="sector"
+            defaultSizeBy="market_cap_basic"
+            defaultColorBy="change"
+            tooltip
+          />
+        </section>
+
+        <section>
+          <NewsSentimentBadge
+            fetchUrl="/api/news/investing?limit=60"
+            refreshMs={120000}
+          />
+        </section>
+
+        <section className="mt-4">
+          <BenchmarksTable />
+        </section>
+
+        {/* ====== КВАРТАЛЬНИЙ КАЛЕНДАР ПОДІЙ ====== */}
+        <section>
+          {loadingEvents ? (
+            <div className="surface rounded-3xl p-4 opacity-80">
+              Завантаження календаря…
+            </div>
+          ) : (
+            <QuarterCalendar events={events} />
+          )}
+        </section>
+
+        {/* ====== ЗВІТИ СЬОГОДНІ/ЗАВТРА ====== */}
+        <EarningsTwoDays />
+
+        {/* ====== ВАЖЛИВІ НОВИНИ ====== */}
+        <section>
+          <h2 className="text-2xl font-bold mb-3">Важливі новини</h2>
+
+          {/* Бігуча стрічка */}
+          <div className="surface rounded-3xl p-0 overflow-hidden">
+            <div className={`news-ticker ${loadingNews ? "paused" : ""}`}>
+              <div className="track">
+                {tickerItems.map((n, i) => (
+                  <a
+                    key={`${n.id}-${i}`}
+                    href={n.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="item"
+                    title={n.title}
+                  >
+                    <span className="dot" aria-hidden>•</span>
+                    <span className="title">{n.title}</span>
+                    <span className="meta">
+                      {new Date(n.pubDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {" · "}
+                      {n.source}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       </main>
+
+      <style jsx>{`
+        .news-ticker {
+          position: relative; overflow: hidden; border-radius: 1.5rem;
+          background: var(--card-bg); border: 1px solid var(--card-border);
+        }
+        .news-ticker:hover { --ticker-play: paused; }
+        .paused { --ticker-play: paused; }
+        .track {
+          display: inline-flex; gap: 28px; align-items: center; white-space: nowrap;
+          padding: 12px 16px; animation: ticker 45s linear infinite;
+          animation-play-state: var(--ticker-play, running); will-change: transform;
+        }
+        .item { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); opacity: .95; }
+        .item .dot { color: var(--color-primary); font-weight: 700; transform: translateY(-1px); }
+        .item .title { font-size: .95rem; line-height: 1.25rem; }
+        .item .meta { font-size: .75rem; opacity: .65; }
+        @keyframes ticker { 0% {transform: translateX(0);} 100% {transform: translateX(-50%);} }
+        @media (prefers-reduced-motion: reduce) { .track { animation: none; } }
+
+        .surface {
+          background: var(--card-bg);
+          border: 1px solid var(--card-border);
+        }
+      `}</style>
     </div>
-  )
+  );
 }

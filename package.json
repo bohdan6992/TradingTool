@@ -13,13 +13,17 @@
     "cookie": "^1.0.2",
     "framer-motion": "^11.2.13",
     "js-cookie": "^3.0.5",
+    "lightweight-charts": "^5.0.8",
     "lucide-react": "^0.544.0",
     "next": "^14.2.5",
     "next-themes": "0.2.1",
     "pg": "8.11.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "recharts": "^2.15.4"
+    "recharts": "^2.15.4",
+    "rss-parser": "^3.13.0",
+    "swr": "^2.3.6",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",

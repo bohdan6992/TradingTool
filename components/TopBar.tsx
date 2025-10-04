@@ -1,16 +1,25 @@
+"use client";
+
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/router";
 import { useUi } from "./UiProvider";
+import "@/styles/topbar.css";
 
 type Item = { key: string; label: string; disabled?: boolean };
 
 function Dropdown({
   value, onChange, items, ariaLabel,
 }: {
-  value: string; onChange: (v: string) => void; items: Item[]; ariaLabel: string;
+  value: string;
+  onChange: (v: string) => void;
+  items: Item[];
+  ariaLabel: string;
 }) {
-  const { mounted } = useUi();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const active = items.find(i => i.key === value);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -26,32 +35,38 @@ function Dropdown({
     };
   }, []);
 
-  const active = items.find(i => i.key === value);
-
   return (
     <div className="tt-dd" ref={ref}>
-      <button type="button" aria-label={ariaLabel} className="tt-btn" onClick={() => setOpen(v => !v)}>
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="tt-btn"
+        onClick={() => setOpen(v => !v)}
+      >
         <span className="tt-dd-label">{active?.label || value}</span>
-        <span className="tt-dd-caret">▾</span>
+        <span className="tt-dd-caret" aria-hidden>▾</span>
       </button>
 
-      {mounted && open && (
-        <div className="tt-menu">
-          {items.map(i => {
+      {open && (
+        <div className="tt-menu" role="menu">
+          {items.map((i) => {
             const isActive = i.key === value;
-            const isDisabled = !!i.disabled;
             return (
               <button
                 key={i.key}
+                role="menuitemradio"
+                aria-checked={isActive}
                 type="button"
-                className={`tt-option ${isActive ? "is-active" : ""} ${isDisabled ? "is-disabled" : ""}`}
+                className={`tt-option ${isActive ? "is-active" : ""} ${i.disabled ? "is-disabled" : ""}`}
                 onClick={() => {
-                  if (isDisabled) return;
+                  if (i.disabled) return;
                   onChange(i.key);
                   setOpen(false);
                 }}
               >
-                <span className="tt-option-dot" />
+                <span className="tt-option-dot" aria-hidden />
                 <span>{i.label}</span>
               </button>
             );
@@ -62,8 +77,21 @@ function Dropdown({
   );
 }
 
+/** Лише шляхи до логотипів (SVG у /public/brand) */
+const LOGO_PATHS = {
+  light: "/brand/trading_logo_vector_black.svg", // на світлому тлі краще темне лого
+  dark:  "/brand/trading_logo_vector_white.svg", // на темному тлі — світле лого
+};
+
+/** Теми, які вважаємо “світлими” (щоб брати темне лого) */
+const LIGHT_THEMES = new Set(["light", "pastel"]);
+
 export default function TopBar() {
+  const router = useRouter();
   const { theme, setTheme, lang, setLang } = useUi();
+
+  const isLightTheme = LIGHT_THEMES.has(String(theme || "").toLowerCase());
+  const logoSrc = isLightTheme ? LOGO_PATHS.light : LOGO_PATHS.dark;
 
   const themeItems: Item[] = [
     { key: "light", label: "Light" },
@@ -71,10 +99,18 @@ export default function TopBar() {
     { key: "neon", label: "Neon" },
     { key: "pastel", label: "Pastel" },
     { key: "solaris", label: "Solaris" },
-    { key: "cyberpunk", label: "Cyberpunk" },
-    { key: "oceanic", label: "Oceanic" },
+    { key: "cyberpunk", label: "Cyber" },
+    { key: "oceanic", label: "Ocean" },
     { key: "sakura", label: "Sakura" },
     { key: "matrix", label: "Matrix" },
+    { key: "asher", label: "Asher" },
+    { key: "inferno", label: "Inferno" },
+    { key: "aurora", label: "Aurora" },
+    { key: "desert", label: "Desert" },
+    { key: "midnight", label: "Midnight" },
+    { key: "forest", label: "Forest" },
+    { key: "candy", label: "Candy" },
+    { key: "monochrome", label: "Monochrome" },
   ];
 
   const langItems: Item[] = [
@@ -83,18 +119,51 @@ export default function TopBar() {
     { key: "UK", label: "UK" },
   ];
 
-  return (
-    <div className="tt-topbar">
-      <div className="tt-topbar-inner">
-        <a className="tt-brand" href="/">
-          <span className="tt-brand-txt">TradingTool</span>
-        </a>
+  const nav = [
+    { href: "/strategies", label: "Стратегії" },
+    { href: "/signals",    label: "Сигнали" },
+    { href: "/stats",      label: "Новини" },
+    { href: "/calendar",   label: "Календар" },
+    { href: "/guide",      label: "Довідник" },
+    { href: "/watch",      label: "Спостереження" },
+  ];
+  const isActive = (href: string) => router.pathname === href;
 
-        <div className="tt-actions">
+  return (
+    <header className="tt-topbar">
+      <div className="tt-topbar-inner">
+        <Link href="/" className="tt-brand" aria-label="TradingTool — Home">
+          <span className="tt-brand-logo">
+            <Image
+              src={logoSrc}
+              alt="TradingTool"
+              width={48}
+              height={48}
+              priority
+              className="tt-logo-img"
+            />
+          </span>
+          <span className="tt-brand-txt">TradingTool</span>
+        </Link>
+
+        <nav className="tt-nav" aria-label="Primary">
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`tt-pill ${isActive(item.href) ? "is-active" : ""}`}
+            >
+              <span className="tt-pill-glow" aria-hidden />
+              <span className="tt-pill-text">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="tt-right">
           <Dropdown ariaLabel="Theme" value={theme} onChange={(v) => setTheme(v as any)} items={themeItems} />
           <Dropdown ariaLabel="Language" value={lang} onChange={(v) => setLang(v as any)} items={langItems} />
         </div>
       </div>
-    </div>
+    </header>
   );
 }

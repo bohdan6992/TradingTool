@@ -9,6 +9,12 @@
   --bg: #0b0f1a;
   --fg: #e6eaf2;
   --muted: #93a1be;
+
+  /* Нове: шарове "фонове зображення" теми (може перевизначатися в themes.css) */
+  --bg-image:
+    radial-gradient(1100px 700px at 15% -10%, color-mix(in oklab, #7aa2ff 22%, transparent), transparent 60%),
+    radial-gradient(900px 650px at 85% 0%, color-mix(in oklab, #7aa2ff 12%, transparent), transparent 60%);
+
   --card-bg: color-mix(in oklab, #ffffff 5%, transparent);
   --card-ring: rgba(255,255,255,.10);
   --shadow: 0 10px 30px rgba(0,0,0,.25);
@@ -28,12 +34,25 @@
 html, body{
   height: 100%;
   background: var(--bg);
+  /* Нове: додаємо шарові градієнти як фон теми */
+  background-image: var(--bg-image);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: center top;
+  background-size: cover;
+
   color: var(--fg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 *, *::before, *::after{ box-sizing: border-box; }
 svg, text, tspan{ font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+
+/* Виділення тексту — трохи контрасту */
+::selection{
+  background: color-mix(in oklab, var(--color-primary) 28%, transparent);
+}
 
 /* ==================================================================
    Утиліти контейнера / відступів — аналоги tailwind, які ти юзаєш
@@ -88,7 +107,7 @@ svg, text, tspan{ font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto
 
 /* ============ Картки/панелі ============ */
 .tt-card,
-.surface{ /* <— додав .surface для JSX "surface" */
+.surface{ /* <— залишив твою "surface" і додав скло-ефект */
   position: relative;
   padding: 18px;
   background: var(--card-bg);
@@ -181,7 +200,12 @@ svg, text, tspan{ font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto
 
 /* крапки та лінії */
 .recharts-line .recharts-line-curve{ filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
-.recharts-dot{ stroke: var(--chart-dot) !important; fill: var(--bg) !important; }
+.recharts-dot{
+  stroke: var(--chart-dot) !important;
+  fill: var(--bg) !important;
+  filter: drop-shadow(0 0 5px color-mix(in oklab, var(--chart-dot) 60%, transparent));
+}
+.recharts-cartesian-grid line { stroke: var(--chart-grid) !important; }
 
 /* ============ Невеликі відступи для герою (верхнього блоку) ============ */
 .tt-hero{ margin-top: 8px; }
