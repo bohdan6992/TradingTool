@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useUi } from "@/components/UiProvider";
 
-/** Явно позначаємо темні теми вашого застосунку */
+/** Темні теми застосунку */
 const DARK_THEMES = new Set([
   "dark",
   "neon",
@@ -28,23 +28,33 @@ const themeIsDark = (name?: string | null) => {
   return DARK_THEMES.has(v);
 };
 
+/** ---- ЧІТКІ ТИПИ ---- */
+type DataSource = "SPX500" | "NASDAQ100" | "DOWJONES" | "RUSSELL2000" | "WORLD";
+type Grouping = "sector" | "country" | "no_group";
+type SizeBy =
+  | "market_cap_basic"
+  | "number_of_employees"
+  | "price_earnings_ttm"
+  | "dividend_yield_recent";
+type ColorBy =
+  | "change"
+  | "Perf.W"
+  | "Perf.1M"
+  | "Perf.3M"
+  | "Perf.6M"
+  | "Perf.YTD"
+  | "relative_volume_10d_calc"
+  | "Volatility.D"
+  | "gap";
+
 type Props = {
   height?: number;
   locale?: string;
-  /** Початкові значення (можеш не задавати) */
-  defaultDataSource?: "SPX500" | "NASDAQ100" | "DOWJONES" | "RUSSELL2000" | "WORLD";
-  defaultGrouping?: "sector" | "country" | "no_group";
-  defaultSizeBy?: "market_cap_basic" | "number_of_employees" | "price_earnings_ttm" | "dividend_yield_recent";
-  defaultColorBy?:
-    | "change"
-    | "Perf.W"
-    | "Perf.1M"
-    | "Perf.3M"
-    | "Perf.6M"
-    | "Perf.YTD"
-    | "relative_volume_10d_calc"
-    | "Volatility.D"
-    | "gap";
+  /** Початкові значення (необов’язкові) */
+  defaultDataSource?: DataSource;
+  defaultGrouping?: Grouping;
+  defaultSizeBy?: SizeBy;
+  defaultColorBy?: ColorBy;
   tooltip?: boolean;
 };
 
@@ -60,15 +70,17 @@ export default function SectorHeatmap({
   const { theme } = useUi();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // панель керування
-  const [dataSource, setDataSource] = useState<Props["defaultDataSource"]>(defaultDataSource);
-  const [grouping, setGrouping] = useState<Props["defaultGrouping"]>(defaultGrouping);
-  const [sizeBy, setSizeBy] = useState<Props["defaultSizeBy"]>(defaultSizeBy);
-  const [colorBy, setColorBy] = useState<Props["defaultColorBy"]>(defaultColorBy);
+  // панель керування (тепер завжди має валідні string-значення)
+  const [dataSource, setDataSource] = useState<DataSource>(defaultDataSource ?? "SPX500");
+  const [grouping, setGrouping] = useState<Grouping>(defaultGrouping ?? "sector");
+  const [sizeBy, setSizeBy] = useState<SizeBy>(defaultSizeBy ?? "market_cap_basic");
+  const [colorBy, setColorBy] = useState<ColorBy>(defaultColorBy ?? "change");
 
   // тема
   const [isDark, setIsDark] = useState<boolean>(() =>
-    themeIsDark(typeof document !== "undefined" ? document.documentElement.getAttribute("data-theme") : theme)
+    themeIsDark(
+      typeof document !== "undefined" ? document.documentElement.getAttribute("data-theme") : theme
+    )
   );
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -85,10 +97,10 @@ export default function SectorHeatmap({
     () =>
       ({
         exchanges: [],
-        dataSource,               // SPX500 | NASDAQ100 | DOWJONES | RUSSELL2000 | WORLD
-        grouping,                 // sector | country | no_group
-        blockSize: sizeBy,        // market_cap_basic ...
-        blockColor: colorBy,      // change | Perf.W | ...
+        dataSource, // SPX500 | NASDAQ100 | ...
+        grouping, // sector | country | no_group
+        blockSize: sizeBy, // market_cap_basic ...
+        blockColor: colorBy, // change | Perf.W | ...
         locale,
         symbolUrl: "",
         colorTheme: isDark ? "dark" : "light",
@@ -119,7 +131,9 @@ export default function SectorHeatmap({
     root.appendChild(s);
 
     return () => {
-      try { root.innerHTML = ""; } catch {}
+      try {
+        root.innerHTML = "";
+      } catch {}
     };
   }, [payload]);
 
@@ -160,39 +174,37 @@ export default function SectorHeatmap({
   return (
     <div className="card" style={{ height }}>
       <div className="toolbar">
-        <Select
+        <Select<DataSource>
           label="Індекс"
           value={dataSource}
-          onChange={(v) => setDataSource(v as any)}
+          onChange={(v) => setDataSource(v)}
           options={DS}
         />
-        <Select
+        <Select<Grouping>
           label="Групування"
           value={grouping}
-          onChange={(v) => setGrouping(v as any)}
+          onChange={(v) => setGrouping(v)}
           options={GROUPS}
         />
-        <Select
+        <Select<ColorBy>
           label="Color by"
           value={colorBy}
-          onChange={(v) => setColorBy(v as any)}
+          onChange={(v) => setColorBy(v)}
           options={COLORS}
         />
-        <Select
+        <Select<SizeBy>
           label="Size by"
           value={sizeBy}
-          onChange={(v) => setSizeBy(v as any)}
+          onChange={(v) => setSizeBy(v)}
           options={SIZE}
         />
         <button
           className="btn"
           type="button"
           onClick={() => {
-            // ручний “refresh” якщо треба
-            const now = Date.now();
-            setColorBy((c) => (c as string) as any); // тригерить payload useEffect
-            // невеликий хак — змінити colorBy на себе ж не дасть ефекту, але ми вже перезбираємо payload
-            console.debug("[Heatmap] manual refresh", now);
+            // manual refresh-тригер (без зміни значення)
+            setColorBy((c) => c);
+            console.debug("[Heatmap] manual refresh", Date.now());
           }}
           aria-label="Оновити мапу"
           title="Оновити мапу"
@@ -211,11 +223,11 @@ export default function SectorHeatmap({
           border-radius: 1.5rem;
           background: var(--card-bg);
           border: 1px solid var(--card-border);
-          box-shadow: 0 8px 24px rgba(0,0,0,.18);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
           overflow: hidden;
-          display:grid;
-          gap:16px;
-          max-width:1200px;
+          display: grid;
+          gap: 16px;
+          max-width: 1200px;
           margin: 0 auto 14px;
         }
         .toolbar {
@@ -224,9 +236,9 @@ export default function SectorHeatmap({
           gap: 10px;
           align-items: center;
           padding: 10px 12px;
-          background:
-            color-mix(in oklab, var(--card-bg) 85%, transparent);
-          border-bottom: 1px solid color-mix(in oklab, var(--card-border) 80%, transparent);
+          background: color-mix(in oklab, var(--card-bg) 85%, transparent);
+          border-bottom: 1px solid
+            color-mix(in oklab, var(--card-border) 80%, transparent);
         }
         .btn {
           height: 32px;
@@ -241,19 +253,20 @@ export default function SectorHeatmap({
           background: color-mix(in oklab, var(--color-primary) 10%, var(--card-bg));
           border-color: color-mix(in oklab, var(--color-primary) 30%, var(--card-border));
         }
-
-        :global(html[data-theme*="dark"]) .card { color: #e6eaf2; }
-
+        :global(html[data-theme*="dark"]) .card {
+          color: #e6eaf2;
+        }
         @media (max-width: 640px) {
-          .toolbar { gap: 8px; }
+          .toolbar {
+            gap: 8px;
+          }
         }
       `}</style>
     </div>
   );
 }
 
-/** Маленький внутрішній Select, стилізований під тему */
-/** Кастомний headless Select — без нативного <select> */
+/** Маленький внутрішній Select, стилізований під тему (headless) */
 function Select<T extends string>({
   label,
   value,
@@ -306,7 +319,7 @@ function Select<T extends string>({
     }
     if (open) {
       if (e.key === "ArrowDown") {
-        setActive((i) => (i + 1) % options.length);
+        setActive((i) => (i + 1) | 0 % options.length);
         e.preventDefault();
       } else if (e.key === "ArrowUp") {
         setActive((i) => (i - 1 + options.length) % options.length);
@@ -360,7 +373,6 @@ function Select<T extends string>({
                 role="option"
                 aria-selected={isSel}
                 className={`opt ${isSel ? "selected" : ""} ${isAct ? "active" : ""}`}
-                // mousedown, щоб не втрачати фокус на кнопці при кліку
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => choose(idx)}
               >
@@ -382,7 +394,6 @@ function Select<T extends string>({
           font-size: 12px;
           opacity: 0.8;
         }
-
         .btn {
           display: inline-flex;
           align-items: center;
@@ -415,7 +426,6 @@ function Select<T extends string>({
         .chev {
           opacity: 0.8;
         }
-
         .menu {
           position: absolute;
           z-index: 50;
