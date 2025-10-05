@@ -8,6 +8,11 @@ import BenchmarksTable from "@/components/BenchmarksTable";
 import SectorHeatmap from "@/components/SectorHeatmap";
 import NewsSentimentBadge from "@/components/NewsSentimentBadge";
 import BenchmarksStrip from "@/components/BenchmarksStrip";
+import TopMoversWidget from "@/components/TopMoversWidget";
+
+// pages/index.tsx (будь-де)
+import dynamic from "next/dynamic";
+const MarketMood = dynamic(() => import("@/components/MarketMood"), { ssr:false });
 
 type NewsItem = {
   id: string;
@@ -96,16 +101,24 @@ export default function Home() {
           />
         </section>
 
+          <TopMoversWidget
+          universe="AAPL,MSFT,TSLA,NVDA,QQQ,SPY,AMD,META,NFLX,GOOGL"
+          limit={5}
+          refreshMs={60000}
+        />
+                <section className="mt-4">
+          <BenchmarksTable />
+        </section>
+
         <section>
           <NewsSentimentBadge
             fetchUrl="/api/news/investing?limit=60"
             refreshMs={120000}
           />
         </section>
+              <MarketMood fetchUrl="/api/mood" refreshMs={60_000} />
+      {/* … решта сторінки … */}
 
-        <section className="mt-4">
-          <BenchmarksTable />
-        </section>
 
         {/* ====== КВАРТАЛЬНИЙ КАЛЕНДАР ПОДІЙ ====== */}
         <section>
@@ -123,8 +136,6 @@ export default function Home() {
 
         {/* ====== ВАЖЛИВІ НОВИНИ ====== */}
         <section>
-          <h2 className="text-2xl font-bold mb-3">Важливі новини</h2>
-
           {/* Бігуча стрічка */}
           <div className="surface rounded-3xl p-0 overflow-hidden">
             <div className={`news-ticker ${loadingNews ? "paused" : ""}`}>

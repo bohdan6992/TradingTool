@@ -1,4 +1,5 @@
 import EconomicCalendar from "@/components/EconomicCalendar";
+import EarningsCountdown from "@/components/EarningsCountdown";
 
 export default function CalendarPage() {
   return (
@@ -7,6 +8,15 @@ export default function CalendarPage() {
         <h1>Календар</h1>
         
         <section>
+                        <EarningsCountdown
+        // варіант 1: через готовий бекенд
+        // fetchUrl="/api/earnings/next?tickers=AAPL,MSFT,NVDA,META,AMZN,TSLA&limit=8"
+
+        // варіант 2: нехай компонент сам сходить на /api/earnings/next
+        tickers={["AAPL","MSFT","NVDA","META","AMZN","TSLA"]}
+        limit={8}
+        refreshMs={5 * 60 * 1000}
+      />
           <EconomicCalendar
             height={520}
             locale="uk"
