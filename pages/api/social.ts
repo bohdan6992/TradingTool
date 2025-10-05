@@ -1,63 +1,58 @@
-// pages/api/social.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 
-// Можна задати свій інстанс Nitter у .env.local
-const NITTER_BASE = process.env.NITTER_BASE || "https://nitter.net";
+// ВАЖЛИВО: працюємо у nodejs runtime, не Edge
+export const config = { api: { bodyParser: false, externalResolver: true }, runtime: "nodejs" } as any;
 
-// Дуже простий RSS→JSON парсер (без залежностей)
-async function fetchAndParseRSS(url: string) {
-  const r = await fetch(url, {
-    headers: { "User-Agent": "TradingTool/1.0 (+rss)" },
-  });
-  const text = await r.text();
-  // Звичайний, «дешевий» парс: витягуємо <item>...</item>
-  const items: { title: string; link: string; pubDate?: string }[] = [];
-  const itemRe = /<item>([\s\S]*?)<\/item>/gi;
-  let m: RegExpExecArray | null;
-  while ((m = itemRe.exec(text))) {
-    const block = m[1];
-    const title = (block.match(/<title>([\s\S]*?)<\/title>/i)?.[1] || "")
-      .replace(/<!\[CDATA\[(.*?)\]\]>/g, "$1")
-      .trim();
-    const link = (block.match(/<link>([\s\S]*?)<\/link>/i)?.[1] || "").trim();
-    const pubDate = (block.match(/<pubDate>([\s\S]*?)<\/pubDate>/i)?.[1] || "").trim();
-    if (title || link) items.push({ title, link, pubDate });
+function toItemsReddit(xml: string) {
+  // дуже простий XML-парс без залежностей
+  const items: any[] = [];
+  const re = /<entry>[\s\S]*?<\/entry>/g;
+  const titleRe = /<title>([\s\S]*?)<\/title>/;
+  const linkRe = /<link.*?href="([^"]+)"/;
+  const dateRe = /<updated>([^<]+)<\/updated>/;
+  let m;
+  while ((m = re.exec(xml))) {
+    const block = m[0];
+    const title = (titleRe.exec(block)?.[1] || "").trim();
+    const link = linkRe.exec(block)?.[1] || "#";
+    const pubDate = dateRe.exec(block)?.[1] || new Date().toISOString();
+    if (title) items.push({ id: link, title, link, pubDate, source: "reddit" });
   }
-  return { ok: true, items, rawLen: text.length };
+  return items;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const source = (req.query.source as string || "twitter").toLowerCase();
-  const q = (req.query.q as string || "AAPL OR NVDA OR SPY").trim();
-  const limit = Math.max(1, Math.min(100, +(req.query.limit as string) || 20));
-  const debug = req.query.debug === "1";
-
   try {
-    let url = "";
-    if (source === "twitter") {
-      // Nitter RSS: без ключів
-      url = `${NITTER_BASE}/search/rss?f=tweets&q=${encodeURIComponent(q)}`;
-    } else if (source === "reddit") {
-      // Reddit RSS: теж без ключів
-      url = `https://www.reddit.com/search.rss?q=${encodeURIComponent(q)}&sort=new`;
-    } else {
-      return res.status(400).json({ ok: false, error: "unknown source", source });
+    const source = (req.query.source as string) || "reddit";
+    const q = (req.query.q as string) || "AAPL OR NVDA OR SPY";
+    const limit = Math.min(Number(req.query.limit || 24), 100);
+
+    if (source === "reddit") {
+      const u = new URL("https://www.reddit.com/search.rss");
+      u.searchParams.set("q", q);
+      u.searchParams.set("sort", "new");
+      const r = await fetch(u.toString(), {
+        headers: {
+          // Reddit часом блокує дефолтний UA
+          "User-Agent": "TradingTool/1.0 (https://example.com)",
+          "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
+        },
+        // краще без кешу, бо фід живий
+        cache: "no-store",
+      });
+      const xml = await r.text();
+      if (!r.ok) return res.status(r.status).json({ error: `upstream ${r.status}`, raw: xml });
+      const items = toItemsReddit(xml).slice(0, limit);
+      return res.status(200).json({ items });
     }
 
-    const data = await fetchAndParseRSS(url);
-    const items = (data.items || []).slice(0, limit);
+    // заглушка для "twitter" (поки без токенів)
+    if (source === "twitter") {
+      return res.status(200).json({ items: [] });
+    }
 
-    return res.status(200).json({
-      ok: true,
-      count: items.length,
-      items,
-      ...(debug ? { diag: { url, source, q, limit, rssBytes: data.rawLen } } : null),
-    });
+    return res.status(400).json({ error: "unknown source" });
   } catch (e: any) {
-    return res.status(500).json({
-      ok: false,
-      error: e?.message || "fetch/parsing error",
-      ...(debug ? { diag: { source, q, limit } } : null),
-    });
+    return res.status(500).json({ error: e?.message || "server error" });
   }
 }
