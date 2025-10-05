@@ -9,16 +9,15 @@ export default function StatsPage() {
     <>
       <main className="page">
         <h1>Новини</h1>
-                <section>
-                <SocialFeedWidget
-                  initialSource="twitter"
-                  initialQuery="AAPL OR NVDA OR SPY"
-                  limit={24}
-                  refreshMs={120000} // автооновлення кожні 2 хв
-                  // необовʼязково: власний білдер url, якщо у тебе інші ендпоінти
-                  // fetchUrlBuilder={(src, q, limit) => `/api/social/${src}?q=${encodeURIComponent(q)}&limit=${limit}`}
-                />
-              </section>
+          <section>
+            <SocialFeedWidget
+              initialSource="twitter"
+              initialQuery="AAPL NVDA SPY"
+              limit={24}
+              refreshMs={120000} // автооновлення кожні 2 хв
+            />
+          </section>
+
           <section>
           <NewsBoard/>
         </section>
