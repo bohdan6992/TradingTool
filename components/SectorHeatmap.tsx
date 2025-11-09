@@ -227,7 +227,6 @@ export default function SectorHeatmap({
           overflow: hidden;
           display: grid;
           gap: 16px;
-          max-width: 1200px;
           margin: 0 auto 14px;
         }
         .toolbar {

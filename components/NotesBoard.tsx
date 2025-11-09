@@ -203,7 +203,6 @@ export default function NotesBoard() {
         .surface {
           background: var(--card-bg);
           border: 1px solid var(--card-border);
-                    max-width: 1200px;
           margin: 0 auto 14px;
         }
 

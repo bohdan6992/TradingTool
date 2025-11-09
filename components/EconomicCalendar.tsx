@@ -99,7 +99,6 @@ export default function EconomicCalendarUS({
           box-shadow: 0 8px 24px rgba(0,0,0,.18);
           overflow: hidden;
           color: var(--fg);
-          max-width: 1200px;
           margin: 0 auto 14px;
         }
         :global(html[data-theme*="dark"]) .card { color: #e6eaf2; }

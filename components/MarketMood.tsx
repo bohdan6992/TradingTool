@@ -150,7 +150,7 @@ export default function MarketMood({
           border: 1px solid var(--card-border);
           padding: 14px;
           box-shadow: 0 10px 28px rgba(0,0,0,.12);
-                    max-width:1200px;
+                    gap:16px;
           margin: 0 auto 14px;
         }
         .head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }

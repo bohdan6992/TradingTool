@@ -134,7 +134,6 @@ export default function QuarterCalendar({ events }: Props){
           display:grid;
           grid-template-columns: repeat(3, minmax(280px, 1fr));
           gap:16px;
-          max-width:1200px;
           margin: 0 auto 14px;
         }
         @media (max-width: 980px){ .blocks{ grid-template-columns: repeat(2, minmax(260px,1fr)); } }

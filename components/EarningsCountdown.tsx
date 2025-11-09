@@ -198,7 +198,6 @@ export default function EarningsCountdown({
               color-mix(in oklab, var(--card-bg) 88%, transparent) 100%
             );
           padding: 12px;
-          max-width: 1200px;
           margin: 0 auto 14px;
         }
         .head{

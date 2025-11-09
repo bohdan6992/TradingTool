@@ -77,13 +77,12 @@ function Dropdown({
   );
 }
 
-/** Лише шляхи до логотипів (SVG у /public/brand) */
+/** Шляхи до логотипів (SVG у /public/brand) */
 const LOGO_PATHS = {
-  light: "/brand/trading_logo_vector_black.svg", // на світлому тлі краще темне лого
-  dark:  "/brand/trading_logo_vector_white.svg", // на темному тлі — світле лого
+  light: "/brand/trading_logo_vector_black.svg",
+  dark:  "/brand/trading_logo_vector_white.svg",
 };
-
-/** Теми, які вважаємо “світлими” (щоб брати темне лого) */
+/** Теми, які вважаємо “світлими” (для темного логотипу) */
 const LIGHT_THEMES = new Set(["light", "pastel"]);
 
 export default function TopBar() {
@@ -127,41 +126,56 @@ export default function TopBar() {
     { href: "/guide",      label: "Довідник" },
     { href: "/watch",      label: "Спостереження" },
   ];
-  const isActive = (href: string) => router.pathname === href;
+
+  // Активний — якщо збігається початок шляху (підсвітка підсторінок)
+  const isActive = (href: string) =>
+    router.pathname === href || router.pathname.startsWith(href + "/");
 
   return (
-    <header className="tt-topbar">
-      <div className="tt-topbar-inner">
-        <Link href="/" className="tt-brand" aria-label="TradingTool — Home">
-          <span className="tt-brand-logo">
-            <Image
-              src={logoSrc}
-              alt="TradingTool"
-              width={48}
-              height={48}
-              priority
-              className="tt-logo-img"
-            />
-          </span>
-          <span className="tt-brand-txt">TradingTool</span>
-        </Link>
+    <header className="tt-topbar" role="banner">
+      {/* Skip link для доступності клавіатурою */}
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[2000] focus:bg-black/70 focus:text-white focus:px-3 focus:py-2 focus:rounded">
+        Перейти до основного контенту
+      </a>
 
-        <nav className="tt-nav" aria-label="Primary">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`tt-pill ${isActive(item.href) ? "is-active" : ""}`}
-            >
-              <span className="tt-pill-glow" aria-hidden />
-              <span className="tt-pill-text">{item.label}</span>
-            </Link>
-          ))}
-        </nav>
+      {/* viewport масштабується тією ж шкалою, що й полотно (див. globals.css) */}
+      <div className="tt-topbar-viewport">
+        <div className="tt-topbar-inner" aria-label="Головна навігація" role="navigation">
+          {/* Лівий блок: бренд (не стискається) */}
+          <Link href="/" className="tt-brand" aria-label="TradingTool — Home">
+            <span className="tt-brand-logo">
+              <Image
+                src={logoSrc}
+                alt="TradingTool"
+                width={48}
+                height={48}
+                priority
+                className="tt-logo-img"
+              />
+            </span>
+            <span className="tt-brand-txt">TradingTool</span>
+          </Link>
 
-        <div className="tt-right">
-          <Dropdown ariaLabel="Theme" value={theme} onChange={(v) => setTheme(v as any)} items={themeItems} />
-          <Dropdown ariaLabel="Language" value={lang} onChange={(v) => setLang(v as any)} items={langItems} />
+          {/* Центр: навігація — одна лінія, елементи не стискаються */}
+          <nav className="tt-nav nowrap" aria-label="Primary">
+            {nav.map((item) => (
+              <Link
+                prefetch={false}
+                key={item.href}
+                href={item.href}
+                className={`tt-pill ${isActive(item.href) ? "is-active" : ""}`}
+              >
+                <span className="tt-pill-glow" aria-hidden />
+                <span className="tt-pill-text">{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          {/* Правий блок: налаштування (не стискається) */}
+          <div className="tt-right">
+            <Dropdown ariaLabel="Theme" value={theme} onChange={(v) => setTheme(v as any)} items={themeItems} />
+            <Dropdown ariaLabel="Language" value={lang} onChange={(v) => setLang(v as any)} items={langItems} />
+          </div>
         </div>
       </div>
     </header>

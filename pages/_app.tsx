@@ -1,18 +1,21 @@
 // pages/_app.tsx
 import type { AppProps, AppContext } from "next/app";
 import Script from "next/script";
+import Head from "next/head";
+import { useEffect } from "react";
 
 import "@/styles/themes.css";
 import "@/styles/topbar.css";
 import "@/styles/layout.css";
+import "@/styles/globals.css";
 
-// pages/_app.tsx
-import UiProvider from "@/components/UiProvider"; // ✅ default import
+// Хук для автоматичного масштабування
+import { useAutoScale } from "@/hooks/useAutoScale";
 
-// Якщо TopBar раптом не експортується (або шлях зіб'ється) — не впадемо:
+// UI / TopBar
+import UiProvider from "@/components/UiProvider";
 import TopBarMaybe from "@/components/TopBar";
 
-// Страхувальний компонент, якщо TopBar = undefined
 const SafeTopBar: React.FC = (TopBarMaybe as any) || (() => null);
 
 type ThemeKey =
@@ -33,8 +36,24 @@ export default function MyApp({
   initialTheme = "light",
   initialLang = "UA",
 }: MyAppProps) {
+  // 🔧 масштабуємо ВНУТРІШНЮ обгортку (див. <div id="app-scale" /> нижче)
+  useAutoScale(1920, "app-scale");
+
+  // Вмикаємо zoom-mode для CSS-оверрайдів ширини
+  useEffect(() => {
+    document.body.classList.add("zoom-mode");
+    return () => document.body.classList.remove("zoom-mode");
+  }, []);
+
   return (
     <>
+      <Head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1"
+        />
+      </Head>
+
       {/* tv.js вантажиться один раз глобально */}
       <Script
         id="tv-js"
@@ -44,8 +63,14 @@ export default function MyApp({
       />
 
       <UiProvider initialTheme={initialTheme} initialLang={initialLang}>
+        {/* Топбар поза масштабованою обгорткою → sticky/fixed ок */}
         <SafeTopBar />
-        <Component {...pageProps} />
+
+
+        {/* Увесь сайт, що масштабується */}
+        <div id="app-scale">
+          <Component {...pageProps} />
+        </div>
       </UiProvider>
     </>
   );

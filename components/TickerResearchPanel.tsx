@@ -447,7 +447,6 @@ export default function TickerResearchPanel({
           border: 1px solid var(--card-border);
           box-shadow: 0 8px 24px rgba(0,0,0,.18);
           padding: 12px;
-          max-width: 1200px;
           margin: 0 auto 14px;
           overflow: hidden;
         }

@@ -2,9 +2,19 @@
    Topbar / Toolbar
    ========================= */
 .tt-topbar {
-  position: sticky; top: 0; z-index: 60;
+  /* fixed, щоб не ламався через transform предків */
+  position: fixed !important;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+
+  /* видима висота = базова * scale */
+  height: calc(var(--topbar-h) * var(--scale));
+
+  /* без зовнішніх відступів/падінгів */
+  padding: 0;
+  margin: 0;
+
   border-bottom: 1px solid var(--card-border);
-  padding: 10px 0;
   background:
     radial-gradient(120% 140% at 0% -20%, color-mix(in oklab, var(--color-primary) 12%, transparent), transparent),
     linear-gradient(180deg,
@@ -12,13 +22,36 @@
       color-mix(in oklab, var(--card-bg) 86%, transparent) 100%);
   backdrop-filter: blur(10px) saturate(110%);
   -webkit-backdrop-filter: blur(10px) saturate(110%);
-            margin: 0 auto 14px;
+
+  /* анти-джиттер при scale() */
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Внутрішня «сцена»: масштабується/центрується як полотно */
+.tt-topbar-viewport {
+  width: calc(var(--base-width) * 1px);
+  transform-origin: top left;
+  transform: translateX(var(--offsetX)) scale(var(--scale));
+}
+
+/* Сітка усередині топбару (базова, не масштабована, висота) */
 .tt-topbar-inner {
-  max-width: 1120px; margin: 0 auto; padding: 0 20px;
-  display: grid; grid-template-columns: auto 1fr auto;
-  align-items: center; gap: 16px;
+  width: 100%;
+  max-width: none;
+  height: calc(var(--topbar-h) * 1px);
+  padding: 0 20px;
+
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
 }
+
+/* страхуємо від небажаного стискання колонок */
+.tt-topbar-inner > * { min-width: 0; }
 
 /* =========================
    Brand
@@ -28,6 +61,7 @@
   text-decoration: none; color: var(--fg);
   padding: 4px 8px; border-radius: 12px;
   transition: background .2s ease, transform .08s ease, box-shadow .2s ease;
+  min-width: 0;
 }
 .tt-brand:hover {
   background: color-mix(in oklab, var(--color-primary) 10%, var(--card-bg));
@@ -39,7 +73,9 @@
 .tt-logo-img { object-fit: contain; height: 48px; width: auto; filter: drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
 
 .tt-brand-txt {
-  font-weight: 900; font-size: 1.18rem; line-height: 1;
+  font-weight: 900;
+  font-size: 1.18rem; /* у zoom-mode теж масштабується разом зі сценою */
+  line-height: 1;
   display: inline-flex; align-items: center; color: var(--fg);
 }
 
@@ -47,12 +83,19 @@
    Nav
    ========================= */
 .tt-nav {
-  display:flex; align-items:center; gap:8px; overflow:auto; padding: 6px;
+  display:flex; align-items:center; gap:8px;
+  padding: 6px;
+  overflow:auto;
   mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+
+  white-space: nowrap;            /* в один ряд */
+  justify-content: center;
+  scrollbar-width: none;          /* Firefox: ховаємо скролбар */
 }
+.tt-nav::-webkit-scrollbar { display: none; }
 .tt-nav a { color: var(--fg); text-decoration: none; }
 
-/* pill buttons for nav */
+/* pills */
 .tt-pill {
   position: relative;
   display:inline-flex; align-items:center; justify-content:center;
@@ -62,6 +105,9 @@
   border: 1px solid var(--card-border);
   transition: border-color .2s ease, background .2s ease, transform .06s ease, box-shadow .2s ease;
   isolation:isolate; overflow:hidden;
+
+  flex: 0 0 auto; /* не стискаємо */
+  will-change: transform;
 }
 .tt-pill:hover{
   background: color-mix(in oklab, var(--color-primary) 12%, var(--card-bg));
@@ -87,11 +133,10 @@
 .tt-pill:hover .tt-pill-glow{ opacity:.6; }
 
 /* =========================
-   Right cluster (dropdowns)
+   Right cluster
    ========================= */
-.tt-right { display:flex; align-items:center; gap:10px; }
+.tt-right { display:flex; align-items:center; gap:10px; min-width: 0; }
 
-/* ===== Buttons (generic) ===== */
 .tt-btn {
   display: inline-flex; align-items: center; gap: 8px;
   height: 40px; padding: 0 14px; border-radius: 12px;
@@ -100,6 +145,7 @@
   box-shadow: 0 8px 22px -12px color-mix(in oklab, var(--btn-fg) 28%, transparent);
   transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .06s ease;
   font-weight: 800; letter-spacing: .2px;
+  flex: 0 0 auto;
 }
 .tt-btn:hover{
   background: color-mix(in oklab, var(--btn-bg) 88%, var(--btn-fg) 12%);
@@ -110,7 +156,6 @@
 .tt-btn:focus-visible{ outline: 2px solid color-mix(in oklab, var(--btn-fg) 65%, transparent); outline-offset: 2px; }
 .tt-dd-caret{ transform: translateY(-1px); opacity:.8; font-weight:900; }
 
-/* ===== Dropdown ===== */
 .tt-dd { position: relative; }
 
 .tt-menu {
@@ -124,13 +169,11 @@
   box-shadow: 0 16px 30px -12px color-mix(in oklab, var(--btn-fg) 25%, transparent);
   backdrop-filter: blur(6px);
   animation: tt-menu-in .14s ease-out;
-  
 }
 @keyframes tt-menu-in {
   from { opacity: 0; transform: translateY(-4px) scale(.98); }
   to   { opacity: 1; transform: none; }
 }
-
 .tt-option {
   width: 100%; display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 8px;
   text-align: left; padding: 9px 10px; border-radius: 10px;
@@ -154,7 +197,14 @@
    ========================= */
 @media (max-width: 760px){
   .tt-topbar-inner{ grid-template-columns: auto 1fr auto; gap: 10px; }
-  .tt-brand-txt{ display:none; }         /* залишаємо тільки лого на вузьких екранах */
+  /* ховаємо бренд-текст ТІЛЬКИ коли НЕ zoom-mode */
+  body:not(.zoom-mode) .tt-brand-txt{ display:none; }
   .tt-nav{ gap:6px; padding:4px; }
   .tt-pill{ height: 36px; padding: 0 12px; }
+}
+
+/* У zoom-mode бренд-текст завжди видно */
+.zoom-mode .tt-brand-txt{
+  display: inline-flex !important;
+  white-space: nowrap;
 }

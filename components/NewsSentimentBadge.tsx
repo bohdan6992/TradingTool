@@ -323,7 +323,6 @@ export default function NewsSentimentBadge({
           overflow: hidden;
           isolation: isolate;
           color: var(--fg);
-          max-width: 1200px;
           margin: 0 auto 14px;
         }
         .badge::before {

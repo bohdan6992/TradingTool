@@ -200,7 +200,6 @@ export default function SocialFeedWidget({
           padding: 16px;
           box-shadow: 0 10px 26px rgba(0, 0, 0, 0.15);
           backdrop-filter: blur(6px);
-                    max-width: 1200px;
           margin: 0 auto 14px;
         }
 

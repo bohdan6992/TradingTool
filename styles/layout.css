@@ -209,3 +209,64 @@ svg, text, tspan{ font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto
 
 /* ============ Невеликі відступи для герою (верхнього блоку) ============ */
 .tt-hero{ margin-top: 8px; }
+
+/* =============================
+   Zoom-mode: розтягуємо полотно
+   (клас .zoom-mode ми додаємо на <body> у _app.tsx)
+   ============================= */
+
+/* знімаємо всі max-width у популярних контейнерах */
+.zoom-mode .tt-section,
+.zoom-mode .max-w-7xl,
+.zoom-mode [class*="max-w-"] {
+  max-width: none !important;
+}
+
+/* ключові обгортки робимо шириною полотна */
+.zoom-mode .tt-section,
+.zoom-mode .tt-topbar-inner,
+.zoom-mode .page,
+.zoom-mode .content,
+.zoom-mode .wrap {
+  width: calc(var(--base-width) * 1px) !important; /* базова = 1920 */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* щоб гріди не стискались при розтягуванні */
+.zoom-mode .tt-container {
+  /* твій auto-fit OK; достатньо зняти max-width у батьківських */
+  /* якщо хочеш щільніше — розкоментуй наступний рядок */
+  /* grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); */
+}
+
+/* інколи фон з background-attachment: fixed мерехтить під scale;
+   якщо помітиш дрижання — розкоментуй це:
+   body.zoom-mode { background-attachment: scroll; } 
+*/
+
+/* --- Fixed grid under global scale (no reflow) --- */
+.scale-lock {
+  display: grid;
+  gap: var(--gap, 1.25rem);
+  /* вимикаємо tailwind-перебудову, примушуємо нашу сітку */
+  grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr)) !important;
+}
+
+/* зручний API через data-атрибут */
+.scale-lock[data-cols] {
+  /* CSS attr() для number ще не підтримується у grid-template-columns,
+     тому дублюємо через кастомну змінну */
+}
+.scale-lock[data-cols="2"] { --cols: 2; }
+.scale-lock[data-cols="3"] { --cols: 3; }
+.scale-lock[data-cols="4"] { --cols: 4; }
+.scale-lock[data-cols="5"] { --cols: 5; }
+.scale-lock[data-cols="6"] { --cols: 6; }
+.scale-lock[data-cols="7"] { --cols: 7; }
+
+/* підстраховка від утиліт типу lg:grid-cols-* */
+.scale-lock[class*="grid-cols-"] { grid-template-columns: repeat(var(--cols, 1), minmax(0,1fr)) !important; }
+
+/* картки всередині — не стискати нижче мін-ширини (щоб не ламався контент) */
+.scale-lock > * { min-width: 0; }

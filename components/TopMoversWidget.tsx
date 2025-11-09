@@ -112,8 +112,7 @@ export default function TopMoversWidget({
           border: 1px solid var(--card-border);
           border-radius: 18px;
           background: var(--card-bg);
-          padding: 12px;
-                    max-width: 1200px;
+          gap:16px;
           margin: 0 auto 14px;
         }
         .paneHead {

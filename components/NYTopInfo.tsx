@@ -2,7 +2,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import OnThisDayFacts from "@/components/OnThisDayFacts";
 
-
 function getNYParts() {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
@@ -97,7 +96,8 @@ export default function NYTopInfo() {
                 </svg>
               </div>
 
-              <div className="clock__digital" aria-live="polite">
+              {/* ⬇️ додав tabular-nums для стабільної ширини цифр */}
+              <div className="clock__digital tabular-nums" aria-live="polite">
                 {time}
               </div>
             </div>
@@ -108,12 +108,13 @@ export default function NYTopInfo() {
                 <span className="facts__title">Цього дня</span>
                 <span className="facts__date" ref={dateLabelRef}>—</span>
               </div>
-                <OnThisDayFacts tz="America/New_York" lang="uk" />
+              <OnThisDayFacts tz="America/New_York" lang="uk" />
             </aside>
           </div>
         </div>
       </div>
 
+      {/* === існуючі стилі збережено, нижче — лише доповнення/overrides для стабільного масштабування === */}
       <style jsx>{`
         .nytopbar { width: 100%; }
 
@@ -122,7 +123,6 @@ export default function NYTopInfo() {
           display:grid;
           grid-template-columns: repeat(3, minmax(280px, 1fr));
           gap:16px;
-          max-width:1200px;
           margin: 0 auto 14px;
         }
 
@@ -166,7 +166,7 @@ export default function NYTopInfo() {
         .hand-second { stroke: var(--color-primary); stroke-width: 1.6; }
         .pivot { fill: var(--color-primary); }
 
-        /* Великі цифри — по висоті з аналоговим, але адаптивні */
+        /* Великі цифри — по висоті з аналоговим */
         .clock__digital {
           display: flex; align-items: center;
           min-height: 100px;
@@ -175,7 +175,7 @@ export default function NYTopInfo() {
           font-variant-numeric: tabular-nums;
           font-weight: 500;
           color: var(--fg);
-          font-size: clamp(56px, 6.2vw, 112px); /* під монітори масштабується, але без перебору */
+          font-size: clamp(56px, 6.2vw, 112px);
         }
 
         /* RIGHT: facts */
@@ -186,13 +186,25 @@ export default function NYTopInfo() {
         .facts__list { margin: 0; padding-left: 18px; color: var(--fg); }
         .facts__list li { margin: 4px 0; }
 
-        /* Мобільний стек: спершу час (аналог над цифрами), нижче факти */
+        /* Мобільний стек */
         @media (max-width: 960px) {
-          .card__content { grid-template-columns: 1fr; gap: 12px; }
-          .clock-left { grid-template-columns: 1fr; gap: 12px; }
+          .card__content { grid-template-columns: 1fr; gap: 14px; }
+          .clock-left { grid-template-columns: 1fr; gap: 14px; }
           .clock__analog { width: 100px; height: 100px; margin: 0 auto; }
           .clock__digital { min-height: 100px; font-size: clamp(36px, 10vw, 64px); justify-content: center; }
         }
+
+        /* === OVERRIDES для "масштабування без адаптиву" (стабільність при scale) === */
+        .nytopbar,
+        .clock-card { backface-visibility: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+
+        /* фіксовані px-розміри, щоб цифри не «пливли» під subpixel-scale */
+        .clock__digital { font-size: 88px; line-height: 1; letter-spacing: .02em; }
+        .clock__analog, .clock-svg { width: 120px; height: 120px; }
+
+        /* руки годинника рендеримо стабільно */
+        .hand { will-change: transform; }
       `}</style>
     </div>
   );

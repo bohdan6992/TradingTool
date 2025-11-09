@@ -165,7 +165,6 @@ export default function BenchmarksTable({
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
           display:grid;
           gap:16px;
-          max-width:1200px;
           margin: 0 auto 14px;
                   }
         .skeleton {
