@@ -1,5 +1,6 @@
 // tailwind.config.js
 export default {
+  darkMode: 'class', // 🔥 обов’язково — інакше темна тема не працює на мобільних
   content: [
     "./pages/**/*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",

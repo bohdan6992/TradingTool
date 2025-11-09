@@ -39,11 +39,28 @@ export default function MyApp({
   // 🔧 масштабуємо ВНУТРІШНЮ обгортку (див. <div id="app-scale" /> нижче)
   useAutoScale(1920, "app-scale");
 
-  // Вмикаємо zoom-mode для CSS-оверрайдів ширини
+  // Увімкнути zoom-mode для CSS-оверрайдів ширини
   useEffect(() => {
     document.body.classList.add("zoom-mode");
     return () => document.body.classList.remove("zoom-mode");
   }, []);
+
+  // 👇 Миттєва синхронізація теми (без блимання на мобільних)
+  useEffect(() => {
+    try {
+      const cookieTheme =
+        document.cookie.match(/(?:^|; )tt-theme=([^;]+)/)?.[1] || "";
+      const lsTheme = localStorage.getItem("tt-theme") || "";
+      const theme = (cookieTheme || lsTheme || initialTheme) as string;
+      const darkThemes = new Set(["dark", "midnight", "matrix", "cyberpunk"]);
+
+      const root = document.documentElement;
+      const isDark = theme ? darkThemes.has(theme) : root.classList.contains("dark");
+
+      root.classList.toggle("dark", isDark);
+      root.setAttribute("data-theme", theme || (isDark ? "dark" : "light"));
+    } catch {}
+  }, [initialTheme]);
 
   return (
     <>
@@ -52,6 +69,7 @@ export default function MyApp({
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1"
         />
+        <meta name="color-scheme" content="dark light" />
       </Head>
 
       {/* tv.js вантажиться один раз глобально */}
@@ -63,9 +81,10 @@ export default function MyApp({
       />
 
       <UiProvider initialTheme={initialTheme} initialLang={initialLang}>
-        {/* Топбар поза масштабованою обгорткою → sticky/fixed ок */}
+        {/* Топбар поза масштабованою обгорткою */}
         <SafeTopBar />
-
+        {/* Спейсер під топбар: висота масштабується через --topbar-h * --scale */}
+        <div className="tt-topbar-spacer" />
 
         {/* Увесь сайт, що масштабується */}
         <div id="app-scale">
