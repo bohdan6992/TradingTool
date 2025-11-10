@@ -52,9 +52,13 @@ export default function MyApp({
   // Синхрон класу .dark з data-theme
   useEffect(() => {
     const root = document.documentElement;
-    const darkThemes = new Set(["dark", "midnight", "matrix", "cyberpunk", "monochrome"]);
+    const darkThemes = new Set([
+      "dark","neon","cyberpunk","solaris","sakura","oceanic",
+      "matrix","asher","inferno","aurora","desert","midnight",
+      "forest","candy","monochrome",
+    ]);
     const apply = () => {
-      const t = root.getAttribute("data-theme") || String(initialTheme);
+      const t = (root.getAttribute("data-theme") || String(initialTheme)) as ThemeKey;
       root.classList.toggle("dark", darkThemes.has(t));
     };
     apply();
@@ -74,27 +78,28 @@ export default function MyApp({
       </Head>
 
       {/* Ініціалізація теми ДО гідрації */}
-      <Script id="tt-theme-init" strategy="beforeInteractive">
-        {`
-(function(){
-  try{
-    var m = document.cookie.match(/(?:^|; )tt-theme=([^;]+)/);
-    var cookieTheme = m ? decodeURIComponent(m[1]) : "";
-    var lsTheme = "";
-    try { lsTheme = localStorage.getItem("tt-theme") || ""; } catch {}
-    var theme = cookieTheme || lsTheme || ${JSON.stringify(initialTheme)};
-    var darkSet = new Set(["dark","midnight","matrix","cyberpunk","monochrome"]);
-    var root = document.documentElement;
-    if(!theme){
-      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-      theme = prefersDark ? "dark" : "light";
-    }
-    root.setAttribute("data-theme", theme);
-    root.classList.toggle("dark", darkSet.has(theme));
-  }catch(e){}
-})();
-        `}
-      </Script>
+      <Script id="tt-theme-init" strategy="beforeInteractive">{`
+        (function(){
+          try{
+            var m = document.cookie.match(/(?:^|; )tt-theme=([^;]+)/);
+            var cookieTheme = m ? decodeURIComponent(m[1]) : "";
+            var lsTheme = ""; try { lsTheme = localStorage.getItem("tt-theme") || ""; } catch {}
+            var theme = cookieTheme || lsTheme || ${JSON.stringify(initialTheme)};
+            var darkSet = new Set([
+              "dark","neon","cyberpunk","solaris","sakura","oceanic",
+              "matrix","asher","inferno","aurora","desert","midnight",
+              "forest","candy","monochrome"
+            ]);
+            var root = document.documentElement;
+            if(!theme){
+              var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+              theme = prefersDark ? "dark" : "light";
+            }
+            root.setAttribute("data-theme", theme);
+            root.classList.toggle("dark", darkSet.has(theme));
+          }catch(e){}
+        })();
+      `}</Script>
 
       {/* TradingView */}
       <Script
@@ -108,14 +113,15 @@ export default function MyApp({
         {/* fixed topbar — ВАЖЛИВО: не всередині #app-scale */}
         <SafeTopBar />
 
-        {/* ВСЯ сторінка, що повинна відсунутися від topbar */}
-        <div id="tt-root">
-          {/* Масштабоване “полотно” */}
-          <div id="app-scale">
-            <Component {...pageProps} />
-          </div>
+        {/* ✅ Прокладка, що гарантує відступ під fixed-топбаром */}
+        <div id="tt-offset" aria-hidden="true" />
+
+        {/* Масштабоване «полотно» */}
+        <div id="app-scale">
+          <Component {...pageProps} />
         </div>
       </UiProvider>
+
     </>
   );
 }

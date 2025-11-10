@@ -9,7 +9,7 @@ function isDarkTheme(): boolean {
 }
 
 export default function TVEmbed({
-  endpoint,        // напр. "technical-analysis", "market-overview", "forex-heat-map"
+  endpoint,
   payload,
   height = 420,
   host = "https://www.tradingview-widget.com",
