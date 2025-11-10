@@ -5,16 +5,18 @@ import Script from "next/script";
 import Head from "next/head";
 import { useEffect } from "react";
 
+// Порядок імпортів стилів важливий
 import "@/styles/themes.css";
 import "@/styles/topbar.css";
 import "@/styles/layout.css";
 import "@/styles/globals.css";
 
+// Масштабування полотна
 import { useAutoScale } from "@/hooks/useAutoScale";
 
+// UI / TopBar
 import UiProvider from "@/components/UiProvider";
 import TopBarMaybe from "@/components/TopBar";
-
 const SafeTopBar: React.FC = (TopBarMaybe as any) || (() => null);
 
 type ThemeKey =
@@ -34,17 +36,20 @@ export default function MyApp({
   initialTheme = "light",
   initialLang = "UA",
 }: MyAppProps) {
+  // Масштабуємо “полотно” і тримаємо змінні :root в синхроні
   useAutoScale({
     baseWidth: 1920,
     targetId: "app-scale",
     headerSelector: ".tt-topbar",
   });
 
+  // Увімкнути zoom-mode для ширинних оверрайдів
   useEffect(() => {
     document.body.classList.add("zoom-mode");
     return () => document.body.classList.remove("zoom-mode");
   }, []);
 
+  // Синхрон класу .dark з data-theme
   useEffect(() => {
     const root = document.documentElement;
     const darkThemes = new Set(["dark", "midnight", "matrix", "cyberpunk", "monochrome"]);
@@ -68,6 +73,7 @@ export default function MyApp({
         <meta name="color-scheme" content="dark light" />
       </Head>
 
+      {/* Ініціалізація теми ДО гідрації */}
       <Script id="tt-theme-init" strategy="beforeInteractive">
         {`
 (function(){
@@ -90,6 +96,7 @@ export default function MyApp({
         `}
       </Script>
 
+      {/* TradingView */}
       <Script
         id="tv-js"
         src="https://s3.tradingview.com/tv.js"
@@ -98,27 +105,28 @@ export default function MyApp({
       />
 
       <UiProvider initialTheme={initialTheme} initialLang={initialLang}>
-        {/* Фіксований топбар */}
+        {/* fixed topbar — ВАЖЛИВО: не всередині #app-scale */}
         <SafeTopBar />
 
-        {/* ПРОКЛАДКА: резервує місце під fixed-баром */}
-        <div className="tt-offset" aria-hidden />
-
-        {/* Масштабоване полотно */}
-        <div id="app-scale">
-          <Component {...pageProps} />
+        {/* ВСЯ сторінка, що повинна відсунутися від topbar */}
+        <div id="tt-root">
+          {/* Масштабоване “полотно” */}
+          <div id="app-scale">
+            <Component {...pageProps} />
+          </div>
         </div>
       </UiProvider>
     </>
   );
 }
 
+// SSR: дефолтні тема/мова з cookie
 import { parse as parseCookie } from "cookie";
-export async function getInitialProps(appCtx: AppContext) {
-  const appProps = await App.getInitialProps(appCtx as any);
+MyApp.getInitialProps = async (appCtx: AppContext) => {
+  const appProps = await App.getInitialProps(appCtx);
   const cookieStr = appCtx.ctx.req?.headers?.cookie ?? "";
   const parsed = cookieStr ? parseCookie(cookieStr) : {};
   const initialTheme = (parsed["tt-theme"] as ThemeKey) || "light";
   const initialLang  = (parsed["tt-lang"]  as LangKey)  || "UA";
   return { ...appProps, initialTheme, initialLang };
-}
+};

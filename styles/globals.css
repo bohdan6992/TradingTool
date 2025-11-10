@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* safety-утиліта */
-@layer utilities { .tt-grid { display: grid; } }
-
-/* ============ BASE ============ */
+/* ---------------- Base vars ---------------- */
 @layer base {
   :root {
     --bg: #0b0f1a;
@@ -13,97 +10,48 @@
     --muted: #93a1be;
     --color-primary: #60a5fa;
 
-    /* масштабування полотна */
+    /* масштабування */
     --base-width: 1920;
     --scale: 1;
     --offsetX: 0px;
 
     /* topbar */
-    --topbar-h: 72;      /* базова висота (у “логічних” px) */
-    --topbar-k: 1;       /* множник (компактний бар на мобайлі) */
-    --topbar-gap: 26px;  /* “повітря” під баром */
+    --topbar-h: 72;       /* базова висота, px, без scale */
+    --topbar-k: 1;        /* множник висоти (можна змінити у media) */
+    --topbar-gap: 26px;   /* додаткове «повітря» під баром */
+
+    /* головна змінна: відступ від fixed topbar */
+    --tt-offset: calc(
+      var(--topbar-h) * var(--topbar-k, 1) * var(--scale, 1)
+      + var(--topbar-gap, 26px)
+      + env(safe-area-inset-top, 0px)
+    );
   }
 
   html, body { height: 100%; }
 
-  /* ТЕМИ (без жодних падінгів тут!) */
+  /* !!! НІЯКИХ padding-top на body */
   body {
     @apply bg-white text-slate-900 dark:bg-[var(--bg)] dark:text-slate-100;
-    padding-top: 0 !important;         /* глушимо старі костилі */
-    margin-top: 0 !important;
   }
 
   a { @apply text-inherit no-underline; }
   a:hover { @apply underline decoration-1 decoration-white/40 dark:decoration-white/30; }
 }
 
-/* ---- ПРОКЛАДКА ПІД FIXED TOPBAR ---- */
-/* Прокладка під fixed topbar */
-  #tt-offset{
-    height: calc(
-      var(--topbar-h) * var(--topbar-k, 1) * var(--scale)
-      + var(--topbar-gap, 26px)
-      + env(safe-area-inset-top, 0px)
-    );
-    display: block;
-    width: 100%;
-    background: transparent; /* тимчасово можна поставити rgba(255,0,0,.15) щоб побачити */
-  }
-
-
-/* ============ COMPONENTS ============ */
-@layer components {
-  .card { @apply rounded-2xl border border-white/10 bg-white/70 dark:bg-white/5 backdrop-blur-md; }
-  .btn  { @apply px-4 py-2 rounded-xl font-semibold border border-white/20 transition text-slate-900 dark:text-slate-100 bg-white/70 dark:bg-white/5; }
-  .btn:hover {
-    box-shadow:
-      0 8px 24px -12px rgba(0,0,0,.35),
-      0 0 0 1px rgba(255,255,255,.08),
-      0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
-  }
-  .hero-title { @apply text-4xl md:text-6xl font-extrabold tracking-tight; }
-  .hero-sub   { @apply text-slate-600 dark:text-slate-300; }
-  .grid-auto  { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
-  .small      { @apply text-xs text-slate-500 dark:text-slate-400; }
-
-  .tt-table table { @apply w-full text-sm; }
-  .tt-table th, .tt-table td { @apply text-left px-2 py-2; }
-  .tt-table thead tr { @apply border-b border-white/10; }
-  .tt-table tbody tr { @apply border-b border-white/10; }
+/* ---------------- Layout helpers ---------------- */
+#tt-root{
+  /* Саме цей контейнер відсуває ВСЕ від fixed topbar */
+  padding-top: var(--tt-offset);
 }
 
-/* ============ UTILITIES ============ */
-@layer utilities {
-  .shadow-glow {
-    box-shadow:
-      0 8px 24px -12px rgba(0,0,0,.35),
-      0 0 0 1px rgba(255,255,255,.08),
-      0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
-  }
-}
-
-/* ============================= */
-/* 📱 Масштабування полотна      */
-/* ============================= */
-
-html, body {
-  width: 100%;
-  height: 100%;
-  margin: 0; padding: 0;
-  overflow-x: hidden;
-  overscroll-behavior: none;
-}
-
-/* Масштабуємо лише внутрішню обгортку */
-#app-scale {
+#app-scale{
   width: calc(var(--base-width) * 1px);
   transform-origin: top left;
   transform: translateX(var(--offsetX)) scale(var(--scale));
   will-change: transform;
-  margin-top: 0 !important;           /* глушимо можливі старі правила */
 }
 
-/* anti-jitter */
 .card, .nav, .tabs, .topbar, .clock, .strategy-tabs {
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -111,37 +59,34 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* nowrap */
 .nowrap { white-space: nowrap; }
 .nowrap > * { flex: 0 0 auto; }
-
-/* tabular numbers */
 .tabular-nums { font-variant-numeric: tabular-nums; }
 
-/* ============ Topbar ============ */
-.tt-topbar {
+/* ---------------- Topbar ---------------- */
+.tt-topbar{
   position: fixed !important;
   top: 0; left: 0; right: 0;
   z-index: 1000;
-  height: calc(var(--topbar-h) * var(--topbar-k) * var(--scale));
+  height: calc(var(--topbar-h) * var(--topbar-k, 1) * var(--scale, 1));
   padding: 0;
   margin: 0;
 }
 
-.tt-topbar-viewport {
+.tt-topbar-viewport{
   width: calc(var(--base-width) * 1px);
   transform-origin: top left;
   transform: translateX(var(--offsetX)) scale(var(--scale));
 }
 
-.tt-topbar-inner {
+.tt-topbar-inner{
   width: 100%;
   max-width: none;
   padding: 0 20px;
-  height: calc(var(--topbar-h) * var(--topbar-k) * 1px);
+  height: calc(var(--topbar-h) * var(--topbar-k, 1) * 1px);
 }
 
-/* ============ Zoom-mode overrides ============ */
+/* ---------------- Zoom-mode overrides ---------------- */
 .zoom-mode .container,
 .zoom-mode [class*="max-w-"] { max-width: none !important; }
 
@@ -162,68 +107,20 @@ html, body {
 }
 
 .zoom-mode main > section { padding-left: 20px; padding-right: 20px; }
-
 .zoom-mode * { overflow: visible; }
 
-/* nowrap rows */
-.tt-row-nowrap {
-  display: flex;
-  gap: 16px;
-  align-items: stretch;
-  flex-wrap: nowrap;
-}
-.tt-row-nowrap > * { flex: 0 0 auto; }
-
-.tt-grid-solid-2 { display:grid; grid-template-columns: repeat(2, 1fr); gap:16px; }
-.tt-grid-solid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
-.tt-grid-solid-4 { display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; }
-.tt-grid-min-320 { display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:16px; }
-
-.zoom-mode [class*="max-w-"] { max-width: none !important; }
-
-/* ============================================= */
-/* 📱 Мобільні (≤768px): нижчий бар і +50% UI    */
-/* ============================================= */
-@media (max-width: 768px) {
+/* ---------------- Mobile tweaks ---------------- */
+@media (max-width: 768px){
   html { font-size: 150%; }
-
-  :root {
-    --topbar-k: 0.55;   /* компактний бар */
-    --topbar-gap: 34px; /* більше “повітря” */
+  :root{
+    --topbar-k: 0.55;  /* нижчий бар на мобільних */
+    --topbar-gap: 34px;
   }
 
-  p, span, a, label, input, select, textarea {
-    font-size: 1.1em;
-    line-height: 1.4;
-  }
+  .tt-topbar-inner{ padding: 0 12px; gap: 8px; }
+}
 
-  .tt-btn, .tt-pill, button {
-    font-size: 1.3em !important;
-    min-height: 48px !important;
-    padding: 0.75em 1.5em !important;
-    border-radius: 16px !important;
-  }
-
-  .tt-dd > .tt-btn {
-    font-size: 1.3em !important;
-    padding: 0.75em 1.3em !important;
-  }
-
-  .tt-nav { gap: 10px; padding: 8px; }
-  .tt-pill { height: 44px !important; padding: 0 20px !important; }
-
-  .tt-topbar-inner { padding: 0 12px; gap: 8px; }
-
-  .tt-brand-txt { font-size: 1.2rem; }
-  .tt-logo-img { height: 48px !important; }
-
-  .surface, .rounded-3xl { border-radius: 24px !important; }
-
-  input.inp, .inp { height: 52px !important; font-size: 1.2em !important; }
-  .tt-btn.pretty { height: 52px !important; font-size: 1.2em !important; }
-
-  .topGrid .row, .rlist .row { padding: 16px 20px !important; }
-
-  .ticker { font-size: 1.2em !important; }
-  .value  { font-size: 1.1em !important; padding: 8px 14px !important; }
+/* універсальний відступ зверху під fixed topbar */
+main, .page, .content, #app-scale {
+  margin-top: 100px !important; /* або скільки треба */
 }
