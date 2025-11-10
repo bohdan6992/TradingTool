@@ -282,29 +282,43 @@
 
 /* ---------------- ASHER (Ash Grey) ---------------- */
 :root[data-theme="asher"] {
-  --bg: #0f1012;
-  --fg: #ededf0;
-  --muted: #a9b0ba;
+  --bg: #101113;            /* темно-графітовий */
+  --fg: #ecedef;            /* майже білий */
+  --muted: #9ea3aa;         /* холодний попелястий */
 
+  /* фоновий “пил на сонці” — дрібні частинки через шум + промені */
   --bg-image:
-    radial-gradient(1200px 720px at 14% -14%, color-mix(in oklab, #6b7280 42%, transparent), transparent 60%),
-    radial-gradient(1000px 640px at 86% -8%, color-mix(in oklab, #374151 30%, transparent), transparent 60%);
+    repeating-radial-gradient(
+      circle at 40% 35%,
+      rgba(255,255,255,0.04) 0,
+      rgba(255,255,255,0.04) 1px,
+      transparent 2px,
+      transparent 4px
+    ),
+    radial-gradient(1300px 760px at 14% -14%, color-mix(in oklab,#6b7280 40%, transparent), transparent 62%),
+    radial-gradient(1100px 720px at 86% -8%, color-mix(in oklab,#3f444a 30%, transparent), transparent 64%),
+    linear-gradient(180deg, rgba(24,26,30,0.8), rgba(16,17,19,1));
 
   --card-bg: color-mix(in oklab, #ffffff 7%, transparent);
-  --card-border: rgba(156,163,175,.24);
+  --card-border: rgba(160,165,175,.25);
 
-  --color-primary: #a3aab5;
+  --color-primary: #babec5;
 
-  --chart-line: #cfd4db;
-  --chart-dot: #eff1f4;
-  --chart-grid: rgba(156,163,175,.34);
-  --chart-win: #6ee7b7;
-  --chart-loss: #f87171;
-  --chart-legend: #dfe3e8;
-  --chart-tooltip-bg: rgba(18,18,20,.97);
-  --chart-tooltip-border: rgba(156,163,175,.36);
-  --donut-center: #f3f4f6;
+  /* дуже стримані кольори: */
+  --chart-line: #c5c9cf;
+  --chart-dot: #f1f2f4;
+  --chart-grid: rgba(160,165,175,.32);
+
+  /* позитив і негатив — ледь уловимі пастельні */
+  --chart-win: color-mix(in oklab, #6ee7b7 25%, #cfd4db 75%);
+  --chart-loss: color-mix(in oklab, #f87171 25%, #cfd4db 75%);
+
+  --chart-legend: #e0e3e6;
+  --chart-tooltip-bg: rgba(20,20,22,.97);
+  --chart-tooltip-border: rgba(160,165,175,.36);
+  --donut-center: #f5f6f7;
 }
+
 
 /* ---------------- INFERNO (Hellfire) ---------------- */
 :root[data-theme="inferno"] {
@@ -478,29 +492,30 @@
 
 /* ---------------- MONOCHROME (Greyscale Pro) ---------------- */
 :root[data-theme="monochrome"] {
-  --bg: #0d0d0f;          /* глибокий графіт */
-  --fg: #f5f5f7;
-  --muted: #a6a6ad;
 
+
+  --bg:#0b0d12; --fg:#eef2ff; --muted:#b7c0d9;
   --bg-image:
-    radial-gradient(1200px 720px at 15% -14%, color-mix(in oklab, #5a5a5f 36%, transparent), transparent 60%),
-    radial-gradient(1000px 680px at 85% -8%,  color-mix(in oklab, #b3b3b8 24%, transparent), transparent 62%);
-
-  --card-bg: color-mix(in oklab, #ffffff 7%, transparent);
-  --card-border: rgba(176,176,184,.30);
-
-  --color-primary: #c0c4cc;
-
-  --chart-line: #e5e5e7;
-  --chart-dot: #ffffff;
-  --chart-grid: rgba(255,255,255,.18);
-  --chart-win: #9af0c2;      /* м’який зелений для читабельності */
-  --chart-loss: #ffb3b3;     /* м’який червоний */
-  --chart-legend: #ededf1;
-  --chart-tooltip-bg: rgba(14,14,16,.97);
-  --chart-tooltip-border: rgba(176,176,184,.36);
-  --donut-center: #f5f5f7;
+    radial-gradient(1300px 760px at 16% -14%, color-mix(in oklab,#64748b 34%,transparent), transparent 64%),
+    radial-gradient(1100px 720px at 86% -10%, color-mix(in oklab,#22c55e 22%,transparent), transparent 66%),
+    linear-gradient(180deg, color-mix(in oklab,#0f172a 40%,transparent), transparent 60%);
+  --card-bg: color-mix(in oklab,#ffffff 7%,transparent);
+  --card-border: rgba(148,163,184,.26);
+  --color-primary:#8ea3bf;
+  --chart-line:#8ea3bf; --chart-dot:#e4ecf7; --chart-grid:rgba(148,163,184,.30);
+  --chart-win:#22c55e; --chart-loss:#ef4444; --chart-legend:#e2e8f0;
+  --chart-tooltip-bg:rgba(11,13,18,.97); --chart-tooltip-border:rgba(148,163,184,.34);
+  --donut-center:#f3f6fb;
 }
+
+
+
+
+
+
+
+
+
 
 
 /* =========================================================
