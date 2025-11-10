@@ -22,7 +22,6 @@ type ThemeKey =
   | "light" | "dark" | "neon" | "pastel"
   | "solaris" | "cyberpunk" | "oceanic" | "sakura" | "matrix" | "asher" | "inferno"
   | "aurora" | "desert" | "midnight" | "forest" | "candy" | "monochrome";
-
 type LangKey = "UA" | "EN" | "UK";
 
 type MyAppProps = AppProps & {
@@ -36,30 +35,29 @@ export default function MyApp({
   initialTheme = "light",
   initialLang = "UA",
 }: MyAppProps) {
-  // 🔧 масштабуємо ВНУТРІШНЮ обгортку (див. <div id="app-scale" /> нижче)
+  // Масштабуємо ВНУТРІШНЮ обгортку (див. <div id="app-scale" /> нижче)
   useAutoScale(1920, "app-scale");
 
-  // Увімкнути zoom-mode для CSS-оверрайдів ширини
+  // Вмикаємо zoom-mode для CSS-оверрайдів ширини
   useEffect(() => {
     document.body.classList.add("zoom-mode");
     return () => document.body.classList.remove("zoom-mode");
   }, []);
 
-  // 👇 Миттєва синхронізація теми (без блимання на мобільних)
+  // Тримай клас `dark` у синхроні, якщо UiProvider змінює data-theme уже після гідрації
   useEffect(() => {
-    try {
-      const cookieTheme =
-        document.cookie.match(/(?:^|; )tt-theme=([^;]+)/)?.[1] || "";
-      const lsTheme = localStorage.getItem("tt-theme") || "";
-      const theme = (cookieTheme || lsTheme || initialTheme) as string;
-      const darkThemes = new Set(["dark", "midnight", "matrix", "cyberpunk"]);
-
-      const root = document.documentElement;
-      const isDark = theme ? darkThemes.has(theme) : root.classList.contains("dark");
-
-      root.classList.toggle("dark", isDark);
-      root.setAttribute("data-theme", theme || (isDark ? "dark" : "light"));
-    } catch {}
+    const root = document.documentElement;
+    const darkThemes = new Set([
+      "dark", "midnight", "matrix", "cyberpunk", "monochrome",
+    ]);
+    const apply = () => {
+      const t = root.getAttribute("data-theme") || String(initialTheme);
+      root.classList.toggle("dark", darkThemes.has(t));
+    };
+    apply();
+    const obs = new MutationObserver(apply);
+    obs.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
   }, [initialTheme]);
 
   return (
@@ -67,10 +65,34 @@ export default function MyApp({
       <Head>
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1"
+          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
         />
         <meta name="color-scheme" content="dark light" />
       </Head>
+
+      {/* 🔒 Безмиготлива ініціалізація теми ДО гідрації */}
+      <Script id="tt-theme-init" strategy="beforeInteractive">
+        {`
+(function(){
+  try{
+    var m = document.cookie.match(/(?:^|; )tt-theme=([^;]+)/);
+    var cookieTheme = m ? decodeURIComponent(m[1]) : "";
+    var lsTheme = "";
+    try { lsTheme = localStorage.getItem("tt-theme") || ""; } catch {}
+    var theme = cookieTheme || lsTheme || ${JSON.stringify(initialTheme)};
+    var darkSet = new Set(["dark","midnight","matrix","cyberpunk","monochrome"]);
+    var root = document.documentElement;
+    // Якщо теми немає — спробуємо системну
+    if(!theme){
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      theme = prefersDark ? "dark" : "light";
+    }
+    root.setAttribute("data-theme", theme);
+    root.classList.toggle("dark", darkSet.has(theme));
+  }catch(e){}
+})();
+        `}
+      </Script>
 
       {/* tv.js вантажиться один раз глобально */}
       <Script
@@ -83,7 +105,7 @@ export default function MyApp({
       <UiProvider initialTheme={initialTheme} initialLang={initialLang}>
         {/* Топбар поза масштабованою обгорткою */}
         <SafeTopBar />
-        {/* Спейсер під топбар: висота масштабується через --topbar-h * --scale */}
+        {/* Фікс накладання: висота масштабується як --topbar-h * --scale */}
         <div className="tt-topbar-spacer" />
 
         {/* Увесь сайт, що масштабується */}
@@ -100,9 +122,7 @@ import { parse as parseCookie } from "cookie";
 MyApp.getInitialProps = async (appCtx: AppContext) => {
   const cookieStr = appCtx.ctx.req?.headers?.cookie ?? "";
   const parsed = cookieStr ? parseCookie(cookieStr) : {};
-
   const initialTheme = (parsed["tt-theme"] as ThemeKey) || "light";
   const initialLang  = (parsed["tt-lang"]  as LangKey)  || "UA";
-
   return { pageProps: {}, initialTheme, initialLang };
 };
