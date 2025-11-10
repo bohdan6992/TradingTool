@@ -1,35 +1,33 @@
 // pages/_document.tsx
-import { Html, Head, Main, NextScript } from "next/document";
+import Document, { Html, Head, Main, NextScript, DocumentContext } from "next/document";
+import { parse } from "cookie";
 
-export default function Document() {
-  return (
-    <Html lang="uk">
-      <Head>
-        <meta name="color-scheme" content="dark light" />
-        {/* Проставляємо тему ДО гідратації */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var t = localStorage.getItem('tt-theme') || document.cookie.match(/(?:^|; )tt-theme=([^;]+)/)?.[1];
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var dark = t ? (t === 'dark' || t === 'midnight' || t === 'matrix' || t === 'cyberpunk')
-                               : prefersDark;
-                  var root = document.documentElement;
-                  if (dark) root.classList.add('dark'); else root.classList.remove('dark');
-                  // необов'язково: експортуємо data-атрибут для твоєї themes.css
-                  root.setAttribute('data-theme', t || (dark ? 'dark' : 'light'));
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
-      </Head>
-      <body>
-        <Main />
-        <NextScript />
-      </body>
-    </Html>
-  );
+type Props = { initialTheme: string };
+
+export default class MyDocument extends Document<Props> {
+  static async getInitialProps(ctx: DocumentContext) {
+    const initialProps = await Document.getInitialProps(ctx);
+    const cookieStr = ctx.req?.headers?.cookie ?? "";
+    const cookies = cookieStr ? parse(cookieStr) : {};
+    const theme = (cookies["tt-theme"] || "light").toLowerCase();
+
+    return { ...initialProps, initialTheme: theme };
+  }
+
+  render() {
+    const theme = (this.props as any).initialTheme || "light";
+    // вважаємо все, що не "light", темним (як у тебе теми Candy, Cyber, Midnight тощо)
+    const isDark =
+      theme !== "light" && theme !== "pastel" && theme !== "monochrome";
+
+    return (
+      <Html lang="uk" className={isDark ? "dark" : undefined} data-theme={theme}>
+        <Head />
+        <body>
+          <Main />
+          <NextScript />
+        </body>
+      </Html>
+    );
+  }
 }

@@ -27,6 +27,9 @@ export function useUi() {
   return ctx;
 }
 
+// Теми, які вважаємо "світлими" (без класу .dark)
+const LIGHT_THEMES = new Set<ThemeKey>(["light", "pastel", "monochrome"]);
+
 export default function UiProvider({
   children,
   initialTheme = "light",
@@ -50,9 +53,17 @@ export default function UiProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 🔧 Синхронізуємо HTML-атрибути з темою (Tailwind dark + CSS variables)
   useEffect(() => {
     if (!mounted) return;
-    document.documentElement.setAttribute("data-theme", theme);
+
+    const root = document.documentElement;
+    root.setAttribute("data-theme", theme);
+
+    const isDark = !LIGHT_THEMES.has(theme);
+    root.classList.toggle("dark", isDark);
+
+    // зберігаємо вибір теми для SSR у _document.tsx
     Cookies.set("tt-theme", theme, { expires: 365, sameSite: "lax" });
   }, [theme, mounted]);
 
