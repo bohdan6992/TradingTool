@@ -13,22 +13,43 @@
     --muted: #93a1be;
     --color-primary: #60a5fa;
 
-    /* масштабування */
-    --base-width: 1920; /* базова ширина полотна */
-    --scale: 1;         /* оновлюється хуком */
-    --offsetX: 0px;     /* зсув полотна по X для центрування */
+    /* масштабування полотна */
+    --base-width: 1920;
+    --scale: 1;
+    --offsetX: 0px;
 
     /* topbar */
-    --topbar-h: 72;     /* базова висота топбара в px (без scale). Піджени під фактичну */
+    --topbar-h: 72;      /* базова висота (у “логічних” px) */
+    --topbar-k: 1;       /* множник (компактний бар на мобайлі) */
+    --topbar-gap: 26px;  /* “повітря” під баром */
   }
 
   html, body { height: 100%; }
 
-  body { @apply bg-white text-slate-900 dark:bg-[var(--bg)] dark:text-slate-100; }
+  /* ТЕМИ (без жодних падінгів тут!) */
+  body {
+    @apply bg-white text-slate-900 dark:bg-[var(--bg)] dark:text-slate-100;
+    padding-top: 0 !important;         /* глушимо старі костилі */
+    margin-top: 0 !important;
+  }
 
   a { @apply text-inherit no-underline; }
   a:hover { @apply underline decoration-1 decoration-white/40 dark:decoration-white/30; }
 }
+
+/* ---- ПРОКЛАДКА ПІД FIXED TOPBAR ---- */
+/* Прокладка під fixed topbar */
+  #tt-offset{
+    height: calc(
+      var(--topbar-h) * var(--topbar-k, 1) * var(--scale)
+      + var(--topbar-gap, 26px)
+      + env(safe-area-inset-top, 0px)
+    );
+    display: block;
+    width: 100%;
+    background: transparent; /* тимчасово можна поставити rgba(255,0,0,.15) щоб побачити */
+  }
+
 
 /* ============ COMPONENTS ============ */
 @layer components {
@@ -45,7 +66,6 @@
   .grid-auto  { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
   .small      { @apply text-xs text-slate-500 dark:text-slate-400; }
 
-  /* таблиці — лише в .tt-table */
   .tt-table table { @apply w-full text-sm; }
   .tt-table th, .tt-table td { @apply text-left px-2 py-2; }
   .tt-table thead tr { @apply border-b border-white/10; }
@@ -63,7 +83,7 @@
 }
 
 /* ============================= */
-/* 📱 Мобільне масштабування без перебудови */
+/* 📱 Масштабування полотна      */
 /* ============================= */
 
 html, body {
@@ -74,16 +94,16 @@ html, body {
   overscroll-behavior: none;
 }
 
-/* Масштабуємо ЛИШЕ внутрішню обгортку (#app-scale).
-   Хук виставляє transform, але даємо fallback на змінні */
+/* Масштабуємо лише внутрішню обгортку */
 #app-scale {
   width: calc(var(--base-width) * 1px);
   transform-origin: top left;
   transform: translateX(var(--offsetX)) scale(var(--scale));
   will-change: transform;
+  margin-top: 0 !important;           /* глушимо можливі старі правила */
 }
 
-/* ===== Stable scaling utils (anti-jitter) ===== */
+/* anti-jitter */
 .card, .nav, .tabs, .topbar, .clock, .strategy-tabs {
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -91,50 +111,40 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* не дозволяємо перенос пунктів меню/таби/кнопки в кілька рядків */
+/* nowrap */
 .nowrap { white-space: nowrap; }
-.nowrap > * { flex: 0 0 auto; } /* flex-none */
+.nowrap > * { flex: 0 0 auto; }
 
-/* рівномірні цифри для годинника */
+/* tabular numbers */
 .tabular-nums { font-variant-numeric: tabular-nums; }
 
-/* ============ TopBar scaling (мінімум логіки тут) ============ */
-/* сам topbar – fixed; видима висота = базова * scale */
+/* ============ Topbar ============ */
 .tt-topbar {
   position: fixed !important;
   top: 0; left: 0; right: 0;
   z-index: 1000;
-  height: calc(var(--topbar-h) * var(--scale));
-
-  /* ВАЖЛИВО: жодних зовнішніх відступів і падінгів тут */
+  height: calc(var(--topbar-h) * var(--topbar-k) * var(--scale));
   padding: 0;
   margin: 0;
 }
 
-/* масштабована “сцена” всередині топбара – центрована як полотно */
 .tt-topbar-viewport {
   width: calc(var(--base-width) * 1px);
   transform-origin: top left;
   transform: translateX(var(--offsetX)) scale(var(--scale));
 }
 
-/* внутрішня сітка топбара:
-   фіксуємо базову висоту без scale — щоб spacer збігався з реальністю */
 .tt-topbar-inner {
   width: 100%;
   max-width: none;
   padding: 0 20px;
-  height: calc(var(--topbar-h) * 1px); /* ← ключова лінія */
+  height: calc(var(--topbar-h) * var(--topbar-k) * 1px);
 }
-
-/* спейсер під топбар (щоб контент не їхав під нього) */
-.tt-topbar-spacer { height: calc(var(--topbar-h) * var(--scale)); }
 
 /* ============ Zoom-mode overrides ============ */
 .zoom-mode .container,
 .zoom-mode [class*="max-w-"] { max-width: none !important; }
 
-/* ключові обгортки мають ширину полотна */
 .zoom-mode .tt-topbar-inner,
 .zoom-mode .page,
 .zoom-mode .content,
@@ -144,7 +154,6 @@ html, body {
   margin-left: auto; margin-right: auto;
 }
 
-/* головний main — повна ширина полотна */
 .zoom-mode main {
   max-width: none !important;
   width: calc(var(--base-width) * 1px) !important;
@@ -152,13 +161,11 @@ html, body {
   padding-left: 0; padding-right: 0;
 }
 
-/* компенсуємо внутрішні відступи секцій усередині main */
 .zoom-mode main > section { padding-left: 20px; padding-right: 20px; }
 
-/* на випадок локальних overflow, що обрізають масштаб */
 .zoom-mode * { overflow: visible; }
 
-/* Рядок, який НІКОЛИ не переноситься */
+/* nowrap rows */
 .tt-row-nowrap {
   display: flex;
   gap: 16px;
@@ -167,34 +174,30 @@ html, body {
 }
 .tt-row-nowrap > * { flex: 0 0 auto; }
 
-/* Grid із фіксованою кількістю колонок */
 .tt-grid-solid-2 { display:grid; grid-template-columns: repeat(2, 1fr); gap:16px; }
 .tt-grid-solid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
 .tt-grid-solid-4 { display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; }
-
-/* Мінімальна ширина айтемів */
 .tt-grid-min-320 { display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:16px; }
 
-/* На випадок залишкових обмежень контейнерів — знімаємо max-width у zoom-режимі */
 .zoom-mode [class*="max-w-"] { max-width: none !important; }
 
 /* ============================================= */
-/* 📱 +50% розмірів на мобільних (≤768px)        */
+/* 📱 Мобільні (≤768px): нижчий бар і +50% UI    */
 /* ============================================= */
 @media (max-width: 768px) {
-  /* Базовий шрифт — усе, що в rem/em, збільшується */
   html { font-size: 150%; }
 
-  /* Текстові елементи */
+  :root {
+    --topbar-k: 0.55;   /* компактний бар */
+    --topbar-gap: 34px; /* більше “повітря” */
+  }
+
   p, span, a, label, input, select, textarea {
     font-size: 1.1em;
     line-height: 1.4;
   }
 
-  /* Кнопки / піли навігації */
-  .tt-btn,
-  .tt-pill,
-  button {
+  .tt-btn, .tt-pill, button {
     font-size: 1.3em !important;
     min-height: 48px !important;
     padding: 0.75em 1.5em !important;
@@ -209,33 +212,18 @@ html, body {
   .tt-nav { gap: 10px; padding: 8px; }
   .tt-pill { height: 44px !important; padding: 0 20px !important; }
 
-  /* Топбар: збільшимо “внутрішню” базову висоту у пікселях */
-  .tt-topbar-inner {
-    height: calc(var(--topbar-h) * 1px * 1.2); /* +20% до базової висоти */
-    padding: 0 18px;
-    gap: 10px;
-  }
-  .tt-brand-txt { font-size: 1.5em; }
-  .tt-logo-img { height: 56px !important; }
+  .tt-topbar-inner { padding: 0 12px; gap: 8px; }
 
-  /* Плитки/карти */
+  .tt-brand-txt { font-size: 1.2rem; }
+  .tt-logo-img { height: 48px !important; }
+
   .surface, .rounded-3xl { border-radius: 24px !important; }
 
-  /* Інпути */
-  input.inp, .inp {
-    height: 52px !important;
-    font-size: 1.2em !important;
-  }
-  .tt-btn.pretty {
-    height: 52px !important;
-    font-size: 1.2em !important;
-  }
+  input.inp, .inp { height: 52px !important; font-size: 1.2em !important; }
+  .tt-btn.pretty { height: 52px !important; font-size: 1.2em !important; }
 
-  /* Рядки у списках */
-  .topGrid .row,
-  .rlist .row {
-    padding: 16px 20px !important;
-  }
+  .topGrid .row, .rlist .row { padding: 16px 20px !important; }
+
   .ticker { font-size: 1.2em !important; }
   .value  { font-size: 1.1em !important; padding: 8px 14px !important; }
 }

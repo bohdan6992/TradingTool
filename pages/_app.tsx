@@ -1,5 +1,6 @@
 // pages/_app.tsx
 import type { AppProps, AppContext } from "next/app";
+import App from "next/app";
 import Script from "next/script";
 import Head from "next/head";
 import { useEffect } from "react";
@@ -9,10 +10,8 @@ import "@/styles/topbar.css";
 import "@/styles/layout.css";
 import "@/styles/globals.css";
 
-// Хук для автоматичного масштабування
 import { useAutoScale } from "@/hooks/useAutoScale";
 
-// UI / TopBar
 import UiProvider from "@/components/UiProvider";
 import TopBarMaybe from "@/components/TopBar";
 
@@ -35,21 +34,20 @@ export default function MyApp({
   initialTheme = "light",
   initialLang = "UA",
 }: MyAppProps) {
-  // Масштабуємо ВНУТРІШНЮ обгортку (див. <div id="app-scale" /> нижче)
-  useAutoScale(1920, "app-scale");
+  useAutoScale({
+    baseWidth: 1920,
+    targetId: "app-scale",
+    headerSelector: ".tt-topbar",
+  });
 
-  // Вмикаємо zoom-mode для CSS-оверрайдів ширини
   useEffect(() => {
     document.body.classList.add("zoom-mode");
     return () => document.body.classList.remove("zoom-mode");
   }, []);
 
-  // Тримай клас `dark` у синхроні, якщо UiProvider змінює data-theme уже після гідрації
   useEffect(() => {
     const root = document.documentElement;
-    const darkThemes = new Set([
-      "dark", "midnight", "matrix", "cyberpunk", "monochrome",
-    ]);
+    const darkThemes = new Set(["dark", "midnight", "matrix", "cyberpunk", "monochrome"]);
     const apply = () => {
       const t = root.getAttribute("data-theme") || String(initialTheme);
       root.classList.toggle("dark", darkThemes.has(t));
@@ -70,7 +68,6 @@ export default function MyApp({
         <meta name="color-scheme" content="dark light" />
       </Head>
 
-      {/* 🔒 Безмиготлива ініціалізація теми ДО гідрації */}
       <Script id="tt-theme-init" strategy="beforeInteractive">
         {`
 (function(){
@@ -82,7 +79,6 @@ export default function MyApp({
     var theme = cookieTheme || lsTheme || ${JSON.stringify(initialTheme)};
     var darkSet = new Set(["dark","midnight","matrix","cyberpunk","monochrome"]);
     var root = document.documentElement;
-    // Якщо теми немає — спробуємо системну
     if(!theme){
       var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
       theme = prefersDark ? "dark" : "light";
@@ -94,7 +90,6 @@ export default function MyApp({
         `}
       </Script>
 
-      {/* tv.js вантажиться один раз глобально */}
       <Script
         id="tv-js"
         src="https://s3.tradingview.com/tv.js"
@@ -103,12 +98,13 @@ export default function MyApp({
       />
 
       <UiProvider initialTheme={initialTheme} initialLang={initialLang}>
-        {/* Топбар поза масштабованою обгорткою */}
+        {/* Фіксований топбар */}
         <SafeTopBar />
-        {/* Фікс накладання: висота масштабується як --topbar-h * --scale */}
-        <div className="tt-topbar-spacer" />
 
-        {/* Увесь сайт, що масштабується */}
+        {/* ПРОКЛАДКА: резервує місце під fixed-баром */}
+        <div className="tt-offset" aria-hidden />
+
+        {/* Масштабоване полотно */}
         <div id="app-scale">
           <Component {...pageProps} />
         </div>
@@ -117,12 +113,12 @@ export default function MyApp({
   );
 }
 
-// SSR: зчитуємо cookie, щоб не було мерехтіння теми/мови
 import { parse as parseCookie } from "cookie";
-MyApp.getInitialProps = async (appCtx: AppContext) => {
+export async function getInitialProps(appCtx: AppContext) {
+  const appProps = await App.getInitialProps(appCtx as any);
   const cookieStr = appCtx.ctx.req?.headers?.cookie ?? "";
   const parsed = cookieStr ? parseCookie(cookieStr) : {};
   const initialTheme = (parsed["tt-theme"] as ThemeKey) || "light";
   const initialLang  = (parsed["tt-lang"]  as LangKey)  || "UA";
-  return { pageProps: {}, initialTheme, initialLang };
-};
+  return { ...appProps, initialTheme, initialLang };
+}
