@@ -374,40 +374,59 @@
   --donut-center: #e6f7ff;
 }
 
-/* ---------------- DESERT (Dune Sunset — ДЮНИ + ОАЗА) ---------------- */
+/* ---------------- DESERT (Mirage Dunes — закат, дюни, оаза, без смуг) ---------------- */
 :root[data-theme="desert"] {
-  --bg: #120b06;
-  --fg: #fff6e9;
-  --muted: #ffd9a8;
+  --bg: #0f0a07;
+  --fg: #fff3e2;
+  --muted: #f6d7a8;
 
   --bg-image:
-    linear-gradient(12deg,
-      color-mix(in oklab, #7c3e1a 24%, transparent) 0%,
-      transparent 42%,
-      color-mix(in oklab, #a16207 20%, transparent) 100%),
-    linear-gradient(192deg,
-      color-mix(in oklab, #92400e 20%, transparent) 0%,
-      transparent 58%),
-    radial-gradient(1000px 660px at 82% -10%,
-      color-mix(in oklab, #14b8a6 28%, transparent), transparent 70%),
-    radial-gradient(1200px 720px at 14% -14%,
-      color-mix(in oklab, #f59e0b 40%, transparent), transparent 66%);
+    /* SUN GLOW */
+    radial-gradient(900px 420px at 50% -12%,
+      color-mix(in oklab, #f59e0b 50%, transparent) 0%,
+      color-mix(in oklab, #f59e0b 24%, transparent) 35%,
+      transparent 70%),
+    /* OASIS BLOOM */
+    radial-gradient(680px 420px at 72% 66%,
+      color-mix(in oklab, #14b8a6 28%, transparent) 0%,
+      color-mix(in oklab, #14b8a6 14%, transparent) 40%,
+      transparent 70%),
+    /* LEFT DUNE */
+    radial-gradient(1200px 520px at -10% 92%,
+      color-mix(in oklab, #7c3e1a 50%, transparent) 0%,
+      color-mix(in oklab, #a16207 36%, transparent) 48%,
+      transparent 70%),
+    /* RIGHT DUNE */
+    radial-gradient(1000px 480px at 110% 96%,
+      color-mix(in oklab, #a16207 44%, transparent) 0%,
+      color-mix(in oklab, #92400e 30%, transparent) 46%,
+      transparent 72%),
+    /* BASE SKY */
+    linear-gradient(180deg,
+      color-mix(in oklab, #3a2a1f 55%, transparent) 0%,
+      color-mix(in oklab, #241913 65%, transparent) 38%,
+      #120b06 100%);
 
-  --card-bg: color-mix(in oklab, #ffffff 7%, transparent);
-  --card-border: rgba(245, 158, 11, .28);
-
+  --card-bg: color-mix(in oklab, #ffffff 9%, transparent);
+  --card-border: rgba(245,158,11,.30);
   --color-primary: #f59e0b;
 
   --chart-line: #f59e0b;
   --chart-dot: #ffe08a;
-  --chart-grid: rgba(20,184,166,.32);
-  --chart-win: #14b8a6;
-  --chart-loss: #e23f3f;
+  --chart-grid: rgba(245,158,11,.28);
+  --chart-win: #fbbf24;
+  --chart-loss: #ef4444;
   --chart-legend: #ffe5b8;
   --chart-tooltip-bg: rgba(18,12,6,.97);
   --chart-tooltip-border: rgba(245,158,11,.34);
   --donut-center: #fff6e9;
 }
+
+:root[data-theme="desert"] .surface,
+:root[data-theme="desert"] .tt-card {
+  backdrop-filter: blur(8px) saturate(1.02);
+}
+
 
 /* ---------------- MIDNIGHT (Deep Indigo) ---------------- */
 :root[data-theme="midnight"] {

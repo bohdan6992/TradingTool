@@ -119,12 +119,12 @@ export default function TopBar() {
   ];
 
   const nav = [
-    { href: "/strategies", label: "Стратегії" },
+    { href: "/strategies", label: "Статка" },
     { href: "/signals",    label: "Сигнали" },
     { href: "/stats",      label: "Новини" },
     { href: "/calendar",   label: "Календар" },
     { href: "/guide",      label: "Довідник" },
-    { href: "/watch",      label: "Спостереження" },
+    { href: "/watch",      label: "Нотатки" },
   ];
 
   // Активний — якщо збігається початок шляху (підсвітка підсторінок)

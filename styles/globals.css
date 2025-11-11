@@ -124,3 +124,48 @@
 main, .page, .content, #app-scale {
   margin-top: 100px !important; /* або скільки треба */
 }
+
+/* Токени для плиток (дефолти; теми перекриють значенням нижче) */
+:root {
+  --tile-bg: color-mix(in oklab, #ffffff 6%, transparent);
+  --tile-border: rgba(255,255,255,.12);
+  --tile-shadow: rgba(0,0,0,.35);
+  --tile-glow: color-mix(in oklab, var(--color-primary) 28%, transparent);
+  --tile-track: rgba(255,255,255,.08);
+  --tile-fill-start: var(--color-primary);
+  --tile-fill-end: color-mix(in oklab, var(--color-primary) 60%, #22d3ee);
+  --tile-spark: color-mix(in oklab, var(--color-primary) 70%, #9ae6b4);
+
+  --chip-bg: color-mix(in oklab, #ffffff 10%, transparent);
+  --chip-fg: var(--fg);
+  --chip-border: rgba(255,255,255,.14);
+
+  --chip-hot-bg: color-mix(in oklab, #ef4444 28%, transparent);
+  --chip-hot-fg: #ffecec;
+}
+
+html.dark :root,
+html[data-theme*="dark"] {
+  --tile-bg: color-mix(in oklab, #ffffff 7%, transparent);
+  --tile-border: rgba(255,255,255,.10);
+  --tile-track: rgba(255,255,255,.08);
+}
+
+/* Гарні чіпи для тікерів */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--chip-fg);
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  box-shadow: 0 6px 18px -12px rgba(0,0,0,.35) inset, 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter: blur(6px);
+}
+
+/* плавність ширини прогреса */
+@keyframes growWidth { from { width: 0 } to { width: var(--w, 100%) } }
