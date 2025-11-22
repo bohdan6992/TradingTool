@@ -80,6 +80,108 @@ const mock: Tile[] = [
     tickers: [{ t: "TSLA", s: 98 }, { t: "COIN", s: 77 }, { t: "NVDA", s: 63 }],
     spark: [8, 12, 10, 11, 16, 14, 18, 20, 22, 24],
   },
+
+  // --- Нові стратегії ---
+
+  {
+    key: "uptickRule",
+    title: "Uptick Rule",
+    icon: "🛡️",
+    score: 9,
+    maxScore: 18,
+    tickers: [{ t: "TQQQ", s: 82 }, { t: "SOXL", s: 75 }, { t: "RIOT", s: 68 }],
+    spark: [10, 14, 18, 26, 30, 34, 40, 44, 48, 52],
+  },
+  {
+    key: "quartalDep",
+    title: "Quartal Dep",
+    icon: "📅",
+    score: 7,
+    maxScore: 16,
+    tickers: [{ t: "MSFT", s: 84 }, { t: "AAPL", s: 79 }, { t: "NVDA", s: 72 }],
+    spark: [12, 15, 18, 20, 24, 28, 32, 36, 40, 45],
+  },
+  {
+    key: "dayTwo",
+    title: "Day Two",
+    icon: "2️⃣",
+    score: 11,
+    maxScore: 18,
+    tickers: [{ t: "SPY", s: 88 }, { t: "QQQ", s: 81 }, { t: "META", s: 74 }],
+    spark: [18, 20, 24, 30, 36, 40, 44, 48, 52, 58],
+  },
+  {
+    key: "arbitrage",
+    title: "Arbitrage",
+    icon: "🧮",
+    score: 5,
+    maxScore: 14,
+    tickers: [{ t: "GLD", s: 77 }, { t: "SLV", s: 71 }, { t: "FXE", s: 66 }],
+    spark: [10, 11, 13, 15, 17, 18, 20, 22, 23, 25],
+  },
+  {
+    key: "openDoor",
+    title: "Open Door",
+    icon: "🚪",
+    score: 6,
+    maxScore: 15,
+    tickers: [{ t: "SHOP", s: 83 }, { t: "COIN", s: 78 }, { t: "U", s: 69 }],
+    spark: [8, 12, 16, 18, 22, 24, 26, 30, 32, 35],
+  },
+  {
+    key: "rLine",
+    title: "R-Line",
+    icon: "📏",
+    score: 7,
+    maxScore: 17,
+    tickers: [{ t: "SPY", s: 92 }, { t: "IWM", s: 80 }, { t: "DIA", s: 74 }],
+    spark: [14, 18, 20, 24, 28, 32, 34, 36, 40, 44],
+  },
+  {
+    key: "intraDance",
+    title: "Intra Dance",
+    icon: "🩰",
+    score: 8,
+    maxScore: 18,
+    tickers: [{ t: "AMD", s: 88 }, { t: "NVDA", s: 82 }, { t: "TSLA", s: 79 }],
+    spark: [16, 18, 22, 26, 30, 34, 36, 38, 42, 48],
+  },
+  {
+    key: "morningLounch",
+    title: "Morning Lounch",
+    icon: "🌅",
+    score: 10,
+    maxScore: 20,
+    tickers: [{ t: "SPY", s: 90 }, { t: "QQQ", s: 85 }, { t: "ARKK", s: 72 }],
+    spark: [20, 24, 28, 34, 40, 44, 48, 52, 56, 60],
+  },
+  {
+    key: "coupleDating",
+    title: "Couple Dating",
+    icon: "💞",
+    score: 4,
+    maxScore: 12,
+    tickers: [{ t: "SPY/QQQ", s: 81 }, { t: "XLF/SPY", s: 73 }, { t: "IWM/QQQ", s: 69 }],
+    spark: [10, 12, 13, 15, 17, 18, 19, 21, 22, 24],
+  },
+  {
+    key: "volumeArrival",
+    title: "Volume Arrival",
+    icon: "📊",
+    score: 9,
+    maxScore: 18,
+    tickers: [{ t: "NVDA", s: 93 }, { t: "TSLA", s: 88 }, { t: "SMCI", s: 82 }],
+    spark: [18, 22, 26, 32, 38, 44, 46, 50, 54, 60],
+  },
+  {
+    key: "latePrint",
+    title: "Late Print",
+    icon: "🕯️",
+    score: 6,
+    maxScore: 16,
+    tickers: [{ t: "SPY", s: 87 }, { t: "QQQ", s: 80 }, { t: "XLK", s: 74 }],
+    spark: [12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+  },
 ];
 
 function Sparkline({ data, className }: { data?: number[]; className?: string }) {
@@ -129,8 +231,10 @@ export default function LiveStrategyTiles() {
             style={{}}
           >
             {/* Світловий відблиск зверху */}
-            <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                 style={{ background: "radial-gradient(600px 160px at 30% -40px, var(--tile-glow), transparent 70%)" }} />
+            <div
+              className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{ background: "radial-gradient(600px 160px at 30% -40px, var(--tile-glow), transparent 70%)" }}
+            />
 
             {/* Заголовок */}
             <div className="flex items-center gap-3">
@@ -142,13 +246,17 @@ export default function LiveStrategyTiles() {
               {/* info pill на правому краю */}
               <div className="ml-auto flex items-center gap-2">
                 {s.hot && (
-                  <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold
-                                   bg-[var(--chip-hot-bg)] text-[var(--chip-hot-fg)] shadow-sm">
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold
+                                   bg-[var(--chip-hot-bg)] text-[var(--chip-hot-fg)] shadow-sm"
+                  >
                     HOT
                   </span>
                 )}
-                <span className="rounded-full border px-2 py-1 text-xs opacity-70
-                                 border-[var(--tile-border)] bg-[var(--tile-bg)]">
+                <span
+                  className="rounded-full border px-2 py-1 text-xs opacity-70
+                                 border-[var(--tile-border)] bg-[var(--tile-bg)]"
+                >
                   {s.score} / {s.maxScore}
                 </span>
               </div>
