@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useUi } from "@/components/UiProvider";
+import { getTrapQuotes, TrapError } from "@/lib/trapClient";
 
 /* ===== Теми ===== */
 const DARK_THEMES = new Set([
@@ -96,12 +97,9 @@ export default function BridgeQuotes({
 
     const load = async () => {
       try {
-        const res = await fetch("/api/quotes", { cache: "no-store" });
-        if (!res.ok) {
-          const info = await res.json().catch(() => ({}));
-          throw Object.assign(new Error(`HTTP ${res.status}`), { info });
-        }
-        const data: Quotes = await res.json();
+        // 🔹 тепер беремо дані напряму з TRAP (локальний http-сервер)
+        const data: Quotes = await getTrapQuotes();
+
         const tickers = Object.keys(data).sort();
 
         // Вихідні поля від бекенда
@@ -111,7 +109,8 @@ export default function BridgeQuotes({
         let visible = baseFields.filter((f) => !HIDE_FIELDS.has(f));
 
         // Вставляємо обчислювані після Bid та Ask (якщо є LstCls)
-        const hasLstCls = visible.includes("LstCls") || baseFields.includes("LstCls");
+        const hasLstCls =
+          visible.includes("LstCls") || baseFields.includes("LstCls");
         if (hasLstCls) {
           const insertAfter = (arr: string[], after: string, what: string) => {
             const idx = arr.indexOf(after);
@@ -154,7 +153,8 @@ export default function BridgeQuotes({
           const rowStore = new Map<string, number | null>();
 
           for (const f of visible) {
-            const nv = typeof r[f] === "number" ? (r[f] as number) : normNum(r[f]);
+            const nv =
+              typeof r[f] === "number" ? (r[f] as number) : normNum(r[f]);
             const ov = oldRow.get(f) ?? null;
             rowStore.set(f, nv);
 
@@ -163,7 +163,7 @@ export default function BridgeQuotes({
 
             if (changed) {
               const flashKey = `${key}::${f}`;
-              dirRef.current.set(flashKey, (nv! > ov!) ? "up" : "down");
+              dirRef.current.set(flashKey, nv! > ov! ? "up" : "down");
               flashRef.current.add(flashKey);
               setTimeout(() => {
                 flashRef.current.delete(flashKey);
@@ -184,8 +184,47 @@ export default function BridgeQuotes({
         setErrDetails(null);
       } catch (e: any) {
         if (stop) return;
-        setErr(e?.message || "Fetch error");
-        setErrDetails(e?.info || null);
+
+        const te = e as TrapError;
+
+        // 🔹 Людські повідомлення про стани TRAP
+        if (te?.type === "NOT_RUNNING") {
+          setErr("TRAP не запущений на цьому пристрої");
+          setErrDetails({
+            error: te.message,
+            diag: { type: te.type },
+            stderr: "",
+            stdout: "",
+          });
+        } else if (te?.type === "HTTP_ERROR") {
+          setErr(`Помилка TRAP (HTTP ${te.status ?? "?"})`);
+          setErrDetails({
+            error: te.message,
+            diag: { type: te.type, status: te.status },
+            stderr: "",
+            stdout: "",
+          });
+        } else if (te?.type === "BAD_JSON") {
+          setErr("Некоректні дані від TRAP");
+          setErrDetails({
+            error: te.message,
+            diag: { type: te.type },
+            stderr: "",
+            stdout: "",
+          });
+        } else {
+          setErr(e?.message || "Помилка зʼєднання з TRAP");
+          setErrDetails({
+            error: e?.message || "unknown",
+            diag: { type: "UNKNOWN" },
+            stderr: "",
+            stdout: "",
+          });
+        }
+
+        // при помилці чистимо рядки, щоб не показувати застарілі
+        setRows([]);
+        setFields([]);
       }
     };
 
@@ -215,7 +254,10 @@ export default function BridgeQuotes({
           <div className="alert">
             {err}
             {errDetails?.error && <> — {errDetails.error}</>}
-            <button className="linkBtn" onClick={() => setShowDetails((s) => !s)}>
+            <button
+              className="linkBtn"
+              onClick={() => setShowDetails((s) => !s)}
+            >
               {showDetails ? "Сховати" : "Деталі"}
             </button>
           </div>
@@ -233,12 +275,17 @@ export default function BridgeQuotes({
       )}
 
       <div className="tableScroll">
-        <table className="qt" style={{ ["--numw" as any]: `${numColWidth}px` }}>
+        <table
+          className="qt"
+          style={{ ["--numw" as any]: `${numColWidth}px` }}
+        >
           <thead>
             <tr>
               <th className="sticky first">Тікер</th>
               {fields.map((f) => (
-                <th key={f} className="sticky numH">{f}</th>
+                <th key={f} className="sticky numH">
+                  {f}
+                </th>
               ))}
             </tr>
           </thead>
@@ -249,12 +296,16 @@ export default function BridgeQuotes({
                   <span className="tk">{r.ticker}</span>
                   {r.__raw?.Exchange ? (
                     <span className="exch">
-                      {EXCH_BADGE[String(r.__raw.Exchange)] || String(r.__raw.Exchange)}
+                      {EXCH_BADGE[String(r.__raw.Exchange)] ||
+                        String(r.__raw.Exchange)}
                     </span>
                   ) : null}
                 </td>
                 {fields.map((f) => (
-                  <td key={f} className={`num ${cellChangeClass(r.ticker, f)}`}>
+                  <td
+                    key={f}
+                    className={`num ${cellChangeClass(r.ticker, f)}`}
+                  >
                     <span className="val">{fmt(f, r[f])}</span>
                     <span className="caret" aria-hidden />
                   </td>
@@ -278,61 +329,235 @@ export default function BridgeQuotes({
           border-radius: 16px;
           padding: 12px;
           background:
-            linear-gradient(to bottom,
+            linear-gradient(
+              to bottom,
               color-mix(in oklab, var(--card-bg) 70%, transparent) 0%,
               color-mix(in oklab, var(--card-bg) 30%, transparent) 20%,
-              transparent 40%),
+              transparent 40%
+            ),
             var(--card-bg);
-          box-shadow: 0 8px 24px rgba(0,0,0,.18);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
         }
-        .head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-        .title { display:flex; gap:8px; align-items:center; font-weight:800; }
-        .dot{ width:8px; height:8px; border-radius:999px; background:var(--color-primary);
-              box-shadow:0 0 0 4px color-mix(in oklab, var(--color-primary) 22%, transparent);
-              animation:pulse 1.8s ease-in-out infinite; }
-        .alert{ color:#ef4444; font-weight:700; display:flex; gap:10px; align-items:center; }
-        .linkBtn{ border:0; background:transparent; color:var(--color-primary); font-weight:800; cursor:pointer; }
-        .diag{ margin:8px 0; padding:10px; border-radius:10px; font-size:12px;
-               background:rgba(0,0,0,.18); white-space:pre-wrap; font-family:ui-monospace,Menlo,Consolas,monospace; }
-
-        .tableScroll{ overflow:auto; border:1px solid var(--card-border); border-radius:12px; }
-        table.qt{ width:100%; border-collapse:separate; border-spacing:0; font-variant-numeric:tabular-nums; }
-        thead th{ position:sticky; top:0; z-index:2; padding:10px 12px; text-align:left; font-weight:800;
-                  background:color-mix(in oklab, var(--card-bg) 92%, transparent);
-                  border-bottom:1px solid var(--card-border); white-space:nowrap; }
-        th.first, td.first{ position:sticky; left:0; z-index:3; background:color-mix(in oklab, var(--card-bg) 96%, transparent); }
-
-        thead th.numH{ width:var(--numw); text-align:right; }
-        tbody td{ border-bottom:1px solid color-mix(in oklab, var(--card-border) 72%, transparent); }
-        td.num{
-          width:var(--numw); min-width:var(--numw); max-width:var(--numw);
-          position:relative; padding:10px 20px 10px 12px; text-align:right; white-space:nowrap;
+        .head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px;
         }
-        .num .val{ display:inline-block; width:calc(var(--numw) - 28px); overflow:hidden; text-overflow:ellipsis; }
-        .num .caret{ position:absolute; right:8px; top:50%; transform:translateY(-50%); width:0; height:0; }
+        .title {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          font-weight: 800;
+        }
+        .dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: var(--color-primary);
+          box-shadow: 0 0 0 4px
+            color-mix(in oklab, var(--color-primary) 22%, transparent);
+          animation: pulse 1.8s ease-in-out infinite;
+        }
+        .alert {
+          color: #ef4444;
+          font-weight: 700;
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+        .linkBtn {
+          border: 0;
+          background: transparent;
+          color: var(--color-primary);
+          font-weight: 800;
+          cursor: pointer;
+        }
+        .diag {
+          margin: 8px 0;
+          padding: 10px;
+          border-radius: 10px;
+          font-size: 12px;
+          background: rgba(0, 0, 0, 0.18);
+          white-space: pre-wrap;
+          font-family: ui-monospace, Menlo, Consolas, monospace;
+        }
 
-        tbody tr:hover{ background:color-mix(in oklab, var(--color-primary) 6%, var(--card-bg)); }
-        tbody tr.odd{ background:color-mix(in oklab, var(--card-bg) 92%, transparent); }
+        .tableScroll {
+          overflow: auto;
+          border: 1px solid var(--card-border);
+          border-radius: 12px;
+        }
+        table.qt {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+          font-variant-numeric: tabular-nums;
+        }
+        thead th {
+          position: sticky;
+          top: 0;
+          z-index: 2;
+          padding: 10px 12px;
+          text-align: left;
+          font-weight: 800;
+          background: color-mix(
+            in oklab,
+            var(--card-bg) 92%,
+            transparent
+          );
+          border-bottom: 1px solid var(--card-border);
+          white-space: nowrap;
+        }
+        th.first,
+        td.first {
+          position: sticky;
+          left: 0;
+          z-index: 3;
+          background: color-mix(
+            in oklab,
+            var(--card-bg) 96%,
+            transparent
+          );
+        }
 
-        .ticker{ display:flex; align-items:center; gap:8px; font-weight:800; white-space:nowrap; padding:10px 12px; }
-        .exch{ font-size:11px; font-weight:900; letter-spacing:.3px; padding:2px 6px; border-radius:999px;
-               border:1px solid color-mix(in oklab, var(--card-border) 70%, transparent);
-               background:color-mix(in oklab, var(--card-bg) 80%, transparent); opacity:.9; }
+        thead th.numH {
+          width: var(--numw);
+          text-align: right;
+        }
+        tbody td {
+          border-bottom: 1px solid
+            color-mix(in oklab, var(--card-border) 72%, transparent);
+        }
+        td.num {
+          width: var(--numw);
+          min-width: var(--numw);
+          max-width: var(--numw);
+          position: relative;
+          padding: 10px 20px 10px 12px;
+          text-align: right;
+          white-space: nowrap;
+        }
+        .num .val {
+          display: inline-block;
+          width: calc(var(--numw) - 28px);
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .num .caret {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 0;
+          height: 0;
+        }
 
-        .chg.up    { background-image:linear-gradient(90deg, color-mix(in oklab, #10b981 22%, transparent), transparent);
-                     animation:fadeUp ${Math.max(300, fadeMs)}ms ease-out forwards; }
-        .chg.down  { background-image:linear-gradient(90deg, color-mix(in oklab, #ef4444 22%, transparent), transparent);
-                     animation:fadeDown ${Math.max(300, fadeMs)}ms ease-out forwards; }
-        .chg.up .val{ color:#10b981; }
-        .chg.down .val{ color:#ef4444; }
-        .chg.up .caret{ border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:7px solid #10b981; }
-        .chg.down .caret{ border-left:5px solid transparent; border-right:5px solid transparent; border-top:7px solid #ef4444; }
+        tbody tr:hover {
+          background: color-mix(
+            in oklab,
+            var(--color-primary) 6%,
+            var(--card-bg)
+          );
+        }
+        tbody tr.odd {
+          background: color-mix(
+            in oklab,
+            var(--card-bg) 92%,
+            transparent
+          );
+        }
 
-        .empty{text-align:center; opacity:.7; padding:16px;}
+        .ticker {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 800;
+          white-space: nowrap;
+          padding: 10px 12px;
+        }
+        .exch {
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.3px;
+          padding: 2px 6px;
+          border-radius: 999px;
+          border: 1px solid
+            color-mix(in oklab, var(--card-border) 70%, transparent);
+          background: color-mix(
+            in oklab,
+            var(--card-bg) 80%,
+            transparent
+          );
+          opacity: 0.9;
+        }
 
-        @keyframes pulse{0%,100%{transform:scale(1);opacity:.65}50%{transform:scale(1.2);opacity:1}}
-        @keyframes fadeUp{0%{background-size:100% 100%}100%{background-size:0% 100%}}
-        @keyframes fadeDown{0%{background-size:100% 100%}100%{background-size:0% 100%}}
+        .chg.up {
+          background-image: linear-gradient(
+            90deg,
+            color-mix(in oklab, #10b981 22%, transparent),
+            transparent
+          );
+          animation: fadeUp ${Math.max(300, fadeMs)}ms ease-out forwards;
+        }
+        .chg.down {
+          background-image: linear-gradient(
+            90deg,
+            color-mix(in oklab, #ef4444 22%, transparent),
+            transparent
+          );
+          animation: fadeDown ${Math.max(300, fadeMs)}ms ease-out forwards;
+        }
+        .chg.up .val {
+          color: #10b981;
+        }
+        .chg.down .val {
+          color: #ef4444;
+        }
+        .chg.up .caret {
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-bottom: 7px solid #10b981;
+        }
+        .chg.down .caret {
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 7px solid #ef4444;
+        }
+
+        .empty {
+          text-align: center;
+          opacity: 0.7;
+          padding: 16px;
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 0.65;
+          }
+          50% {
+            transform: scale(1.2);
+            opacity: 1;
+          }
+        }
+        @keyframes fadeUp {
+          0% {
+            background-size: 100% 100%;
+          }
+          100% {
+            background-size: 0% 100%;
+          }
+        }
+        @keyframes fadeDown {
+          0% {
+            background-size: 100% 100%;
+          }
+          100% {
+            background-size: 0% 100%;
+          }
+        }
       `}</style>
     </section>
   );

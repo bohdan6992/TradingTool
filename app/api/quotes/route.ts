@@ -12,7 +12,7 @@ const PYTHON_RAW =
 const PROGID = process.env.PROGID || "TradingApp";
 const PYTHON = PYTHON_RAW.replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1");
 
-/* ====== INLINE PYTHON (скорочено не змінював, тільки залишив як у тебе) ====== */
+/* ====== INLINE PYTHON (як у тебе) ====== */
 const PY_INLINE = String.raw`
 import os, sys, time, json, pythoncom
 import win32com.client as win32
@@ -89,7 +89,7 @@ def main():
 if __name__ == "__main__": main()
 `;
 
-/* ====== спавн Python (виправлено типи) ====== */
+/* ====== спавн Python ====== */
 function runPython(args: string[], timeoutMs = 45000) {
   return new Promise<{
     ok: boolean;
@@ -97,7 +97,7 @@ function runPython(args: string[], timeoutMs = 45000) {
     error?: string;
     stdout?: string;
     stderr?: string;
-    code?: number | null; // <-- дозволяємо null
+    code?: number | null;
   }>((resolve) => {
     const child = spawn(PYTHON, ["-c", PY_INLINE, ...args], {
       stdio: ["ignore", "pipe", "pipe"],
@@ -116,12 +116,18 @@ function runPython(args: string[], timeoutMs = 45000) {
     child.stderr.on("data", (d) => (err += d.toString("utf8")));
     child.on("error", (e) => {
       clearTimeout(timer);
-      resolve({ ok: false, error: `spawn error: ${e.message}`, stdout: out, stderr: err, code: -1 });
+      resolve({
+        ok: false,
+        error: `spawn error: ${e.message}`,
+        stdout: out,
+        stderr: err,
+        code: -1,
+      });
     });
 
     child.on("close", (code: number | null) => {
       clearTimeout(timer);
-      const exitCode = code;           // number | null
+      const exitCode = code;
       const isOk = exitCode === 0;
 
       if (killed) {
@@ -145,9 +151,21 @@ function runPython(args: string[], timeoutMs = 45000) {
       }
 
       try {
-        resolve({ ok: true, data: JSON.parse(out.trim() || "{}"), stdout: out, stderr: err, code: exitCode });
+        resolve({
+          ok: true,
+          data: JSON.parse(out.trim() || "{}"),
+          stdout: out,
+          stderr: err,
+          code: exitCode,
+        });
       } catch (e: any) {
-        resolve({ ok: false, error: `invalid json: ${e.message}`, stdout: out, stderr: err, code: exitCode });
+        resolve({
+          ok: false,
+          error: `invalid json: ${e.message}`,
+          stdout: out,
+          stderr: err,
+          code: exitCode,
+        });
       }
     });
   });
@@ -186,22 +204,49 @@ async function runOnce(req: Request) {
 }
 
 export async function GET(req: Request) {
+  // 🔴 ВАЖЛИВО: у продакшні цей endpoint не використовуємо,
+  // щоб не було spawn ENOENT на сервері.
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      {
+        error: "quotes-api-disabled-in-production",
+        message:
+          "Цей endpoint використовується лише локально. У продакшні дані потрібно отримувати напряму з TradingApp/TRAP на локальному пристрої.",
+      },
+      {
+        status: 503,
+        headers: { "Cache-Control": "no-store" },
+      }
+    );
+  }
+
   const now = Date.now();
   if (lastOk && now - lastOk.at < SOFT_CACHE_MS) {
-    return NextResponse.json(lastOk.data, { status: 200, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(lastOk.data, {
+      status: 200,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
   if (inflight) {
     try {
       const cached = await inflight;
-      return NextResponse.json(cached, { status: 200, headers: { "Cache-Control": "no-store" } });
+      return NextResponse.json(cached, {
+        status: 200,
+        headers: { "Cache-Control": "no-store" },
+      });
     } catch {}
   }
   try {
     inflight = runOnce(req).finally(() => (inflight = null));
     const data = await inflight;
     lastOk = { at: Date.now(), data };
-    return NextResponse.json(data, { status: 200, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(data, {
+      status: 200,
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (resp: any) {
-    return resp instanceof NextResponse ? resp : NextResponse.json({ error: "unknown" }, { status: 500 });
+    return resp instanceof NextResponse
+      ? resp
+      : NextResponse.json({ error: "unknown" }, { status: 500 });
   }
 }
