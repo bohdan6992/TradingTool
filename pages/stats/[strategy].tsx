@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { STRATEGIES } from "@/data/strategies";
+import { getStrategyStats } from "@/lib/trapClient"; // 👈 НОВИЙ імпорт
 
 type StatsRow = Record<string, string>;
 
@@ -19,7 +20,7 @@ export default function StrategyStatsPage() {
   const [sortKey, setSortKey] = useState<SortKey>("ticker");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
-  // завантаження stats з bridge-ендпоінта
+  // завантаження stats НАПРЯМУ з локального bridge
   useEffect(() => {
     if (!strategy) return;
 
@@ -30,15 +31,8 @@ export default function StrategyStatsPage() {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`/api/bridge/strategy-stats/${strategy}`, {
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-
-        const json = (await res.json()) as any[];
+        // ❗ тепер не /api/bridge/... а прямий виклик до TradingBridgeApi
+        const json = (await getStrategyStats(strategy)) as any[];
 
         if (!cancelled) {
           const normalized: StatsRow[] = json.map((r) => {
@@ -160,7 +154,10 @@ export default function StrategyStatsPage() {
                     onClick={() => handleSort("ticker")}
                   >
                     <span className="inline-flex items-center gap-1">
-                      Ticker <span className="text-xs opacity-70">{sortIcon("ticker")}</span>
+                      Ticker{" "}
+                      <span className="text-xs opacity-70">
+                        {sortIcon("ticker")}
+                      </span>
                     </span>
                   </th>
                   <th
@@ -168,7 +165,10 @@ export default function StrategyStatsPage() {
                     onClick={() => handleSort("bench")}
                   >
                     <span className="inline-flex items-center gap-1">
-                      Bench <span className="text-xs opacity-70">{sortIcon("bench")}</span>
+                      Bench{" "}
+                      <span className="text-xs opacity-70">
+                        {sortIcon("bench")}
+                      </span>
                     </span>
                   </th>
                   <th
@@ -176,7 +176,10 @@ export default function StrategyStatsPage() {
                     onClick={() => handleSort("corr")}
                   >
                     <span className="inline-flex items-center gap-1">
-                      Corr <span className="text-xs opacity-70">{sortIcon("corr")}</span>
+                      Corr{" "}
+                      <span className="text-xs opacity-70">
+                        {sortIcon("corr")}
+                      </span>
                     </span>
                   </th>
                   <th
@@ -184,7 +187,10 @@ export default function StrategyStatsPage() {
                     onClick={() => handleSort("beta")}
                   >
                     <span className="inline-flex items-center gap-1">
-                      Beta <span className="text-xs opacity-70">{sortIcon("beta")}</span>
+                      Beta{" "}
+                      <span className="text-xs opacity-70">
+                        {sortIcon("beta")}
+                      </span>
                     </span>
                   </th>
                   <th
@@ -192,7 +198,10 @@ export default function StrategyStatsPage() {
                     onClick={() => handleSort("sig")}
                   >
                     <span className="inline-flex items-center gap-1">
-                      Sig <span className="text-xs opacity-70">{sortIcon("sig")}</span>
+                      Sig{" "}
+                      <span className="text-xs opacity-70">
+                        {sortIcon("sig")}
+                      </span>
                     </span>
                   </th>
                 </tr>
@@ -232,7 +241,6 @@ export default function StrategyStatsPage() {
                   );
                 })}
               </tbody>
-
             </table>
           </div>
         </section>

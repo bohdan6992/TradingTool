@@ -2,10 +2,7 @@
 
 export const DEFAULT_TRAP_URL = "http://localhost:5197";
 
-export type TrapErrorType =
-  | "NOT_RUNNING"
-  | "HTTP_ERROR"
-  | "BAD_JSON";
+export type TrapErrorType = "NOT_RUNNING" | "HTTP_ERROR" | "BAD_JSON";
 
 export type TrapError = {
   type: TrapErrorType;
@@ -13,12 +10,19 @@ export type TrapError = {
   status?: number;
 };
 
-export async function getTrapQuotes() {
-  const base =
-    process.env.NEXT_PUBLIC_TRADING_BRIDGE_URL || DEFAULT_TRAP_URL;
+function getBridgeBase() {
+  return process.env.NEXT_PUBLIC_TRADING_BRIDGE_URL || DEFAULT_TRAP_URL;
+}
+
+/**
+ * Базова функція: тягне JSON з локального TradingBridgeApi
+ * і кидає TrapError при помилці.
+ */
+async function fetchBridgeJson<T = any>(path: string): Promise<T> {
+  const base = getBridgeBase();
 
   try {
-    const res = await fetch(`${base}/api/quotes`, { cache: "no-store" });
+    const res = await fetch(`${base}${path}`, { cache: "no-store" });
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -30,7 +34,7 @@ export async function getTrapQuotes() {
     }
 
     try {
-      return await res.json();
+      return (await res.json()) as T;
     } catch (e: any) {
       throw <TrapError>{
         type: "BAD_JSON",
@@ -44,4 +48,25 @@ export async function getTrapQuotes() {
       message: "TRAP не запущений на цьому пристрої або недоступний",
     };
   }
+}
+
+/**
+ * Котирування (коротка вітрина) з /api/quotes
+ */
+export async function getTrapQuotes() {
+  return fetchBridgeJson("/api/quotes");
+}
+
+/**
+ * Статистика стратегії з /api/strategy/{strategy}/stats
+ */
+export async function getStrategyStats(strategy: string) {
+  return fetchBridgeJson<any[]>(`/api/strategy/${strategy}/stats`);
+}
+
+/**
+ * Котирування по всьому universe з /api/universe-quotes
+ */
+export async function getUniverseQuotes() {
+  return fetchBridgeJson(`/api/universe-quotes`);
 }

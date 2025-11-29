@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getUniverseQuotes } from "@/lib/trapClient";
 
 type QuoteItem = {
   Bid?: number | null;
@@ -34,15 +35,8 @@ export default function BridgeUniverseQuotes() {
       try {
         setStatus((prev) => (prev === "idle" ? "loading" : prev));
 
-        const res = await fetch("/api/bridge/universe-quotes", {
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-
-        const json = (await res.json()) as UniverseResponse;
+        // 🔁 ТЕПЕР напряму в локальний TradingBridgeApi через trapClient
+        const json = (await getUniverseQuotes()) as UniverseResponse;
 
         if (!cancelled) {
           setData(json);
@@ -203,7 +197,7 @@ export default function BridgeUniverseQuotes() {
       {/* футер */}
       <div className="px-4 sm:px-6 py-2 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
         <span>Оновлення ~ раз на секунду</span>
-        <span>/api/bridge/universe-quotes</span>
+        <span>local bridge: /api/universe-quotes</span>
       </div>
     </div>
   );
