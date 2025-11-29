@@ -1,6 +1,6 @@
 // lib/trapClient.ts
 
-export const DEFAULT_TRAP_URL = "http://127.0.0.1:5055";
+export const DEFAULT_TRAP_URL = "http://localhost:5197";
 
 export type TrapErrorType =
   | "NOT_RUNNING"
@@ -14,7 +14,8 @@ export type TrapError = {
 };
 
 export async function getTrapQuotes() {
-  const base = process.env.NEXT_PUBLIC_TRAP_URL || DEFAULT_TRAP_URL;
+  const base =
+    process.env.NEXT_PUBLIC_TRADING_BRIDGE_URL || DEFAULT_TRAP_URL;
 
   try {
     const res = await fetch(`${base}/api/quotes`, { cache: "no-store" });
