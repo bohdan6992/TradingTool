@@ -1,3 +1,4 @@
+// components/BridgeArbitrageSignals.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -43,6 +44,8 @@ export type ArbitrageSignal = {
   shortCandidate?: boolean;
   longCandidate?: boolean;
 };
+
+type Mode = "top" | "all";
 
 type BetaKey = "lt1" | "b1_1_5" | "b1_5_2" | "gt2" | "unknown";
 
@@ -113,13 +116,12 @@ const fmtNum = (v: number | null | undefined, digits = 2) =>
         minimumFractionDigits: digits,
       });
 
+const BRIDGE_BASE =
+  process.env.NEXT_PUBLIC_TRADING_BRIDGE_URL ?? "http://localhost:5197";
+
 /* ================= КОМПОНЕНТ ================= */
 
-export default function BridgeArbitrageSignals({
-  items,
-}: {
-  items: ArbitrageSignal[];
-}) {
+export default function BridgeArbitrageSignals() {
   const { theme } = useUi();
   const isDark =
     typeof document !== "undefined"
@@ -127,6 +129,12 @@ export default function BridgeArbitrageSignals({
           document.documentElement.getAttribute("data-theme")
         ) || isDarkTheme(theme)
       : isDarkTheme(theme);
+
+  const [mode, setMode] = useState<Mode>("top");
+  const [items, setItems] = useState<ArbitrageSignal[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
 
   /* ===== flash при зміні значень ===== */
   const prevRef = useRef<Map<string, number | null>>(new Map());
@@ -173,6 +181,55 @@ export default function BridgeArbitrageSignals({
     return f === "up" ? "flashUp" : f === "down" ? "flashDown" : "";
   };
 
+  /* ===== Фетч із моста ===== */
+
+  const fetchSignals = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const endpoint =
+        mode === "top"
+          ? `${BRIDGE_BASE}/api/strategy/arbitrage/signals`
+          : `${BRIDGE_BASE}/api/strategy/arbitrage/signals-debug`;
+
+      const res = await fetch(endpoint);
+
+      if (!res.ok) {
+        setItems([]);
+        setError(`HTTP ${res.status}`);
+        return;
+      }
+
+      const json = await res.json();
+      setItems((json?.items ?? []) as ArbitrageSignal[]);
+      setUpdatedAt(Date.now());
+    } catch (e: any) {
+      setItems([]);
+      setError(e?.message || "Помилка завантаження");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      if (cancelled) return;
+      await fetchSignals();
+    };
+
+    load();
+    const timer = setInterval(load, 2500);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
   /* ===== Групування: benchmark → beta → ПАРИ ЗА ІНДЕКСОМ ===== */
   const benchBlocks: BenchBlock[] = useMemo(() => {
     type BucketInternal = {
@@ -208,11 +265,9 @@ export default function BridgeArbitrageSignals({
     const benchMap = new Map<string, BucketGroup[]>();
 
     for (const [, b] of bucketMap.entries()) {
-      // сортуємо всередині бакета
       b.shorts.sort((a, c) => a.ticker.localeCompare(c.ticker));
       b.longs.sort((a, c) => a.ticker.localeCompare(c.ticker));
 
-      // формуємо пари: short[i] <-> long[i]
       const n = Math.max(b.shorts.length, b.longs.length);
       const rows: RowPair[] = [];
       for (let i = 0; i < n; i++) {
@@ -239,8 +294,7 @@ export default function BridgeArbitrageSignals({
       .map(([benchmark, groups]) => ({
         benchmark,
         buckets: groups.sort(
-          (a, b) =>
-            betaOrder.indexOf(a.betaKey) - betaOrder.indexOf(b.betaKey)
+          (a, b) => betaOrder.indexOf(a.betaKey) - betaOrder.indexOf(b.betaKey)
         ),
       }));
 
@@ -252,13 +306,20 @@ export default function BridgeArbitrageSignals({
   );
 
   /* ===== Розгортання по бакетах (10 рядків за замовчуванням) ===== */
-  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
 
   const toggleBucket = (id: string) => {
     setExpandedMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const updatedLabel =
+    updatedAt != null
+      ? new Date(updatedAt).toLocaleTimeString("uk-UA", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      : null;
 
   return (
     <section className="wrap" data-theme={isDark ? "dark" : "light"}>
@@ -266,14 +327,49 @@ export default function BridgeArbitrageSignals({
         <div className="title">
           <span className="dot" />
           ARBITRAGE сигнали
+          {updatedLabel && (
+            <span className="updated">оновлено о {updatedLabel}</span>
+          )}
+          {loading && <span className="loadingDot">●</span>}
+        </div>
+
+        <div className="modeToggle">
+          <span className="modeLabel">Режим:</span>
+          <div className="modePill">
+            <button
+              type="button"
+              className={`modeBtn ${mode === "top" ? "active" : ""}`}
+              onClick={() => setMode("top")}
+            >
+              Топові
+            </button>
+            <button
+              type="button"
+              className={`modeBtn ${mode === "all" ? "active" : ""}`}
+              onClick={() => setMode("all")}
+            >
+              Усі{" "}
+              <span className="modeCount">
+                {items.length ? items.length : "0"}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {!hasAny && (
-        <div className="empty">Немає активних сигналів</div>
+      {error && (
+        <div className="error">
+          Помилка: <span>{error}</span>
+        </div>
       )}
 
-      {hasAny && (
+      {!error && !hasAny && (
+        <div className="empty">
+          {loading ? "Завантаження…" : "Немає активних сигналів"}
+        </div>
+      )}
+
+      {!error && hasAny && (
         <div className="benchContainer">
           {benchBlocks.map((bench) => {
             const color =
@@ -293,7 +389,6 @@ export default function BridgeArbitrageSignals({
                   <span className="benchName">{bench.benchmark}</span>
                 </header>
 
-                {/* 4 колонки по β-бакетах */}
                 <div className="bucketGrid">
                   {bench.buckets.map((g) => {
                     const isExpanded = !!expandedMap[g.id];
@@ -410,6 +505,7 @@ export default function BridgeArbitrageSignals({
           display: flex;
           justify-content: space-between;
           align-items: center;
+          gap: 10px;
           margin-bottom: 10px;
         }
 
@@ -427,6 +523,109 @@ export default function BridgeArbitrageSignals({
           border-radius: 999px;
           background: var(--color-primary);
           box-shadow: 0 0 5px var(--color-primary);
+        }
+
+        .updated {
+          font-size: 11px;
+          opacity: 0.6;
+        }
+
+        .loadingDot {
+          margin-left: 6px;
+          font-size: 10px;
+          color: var(--color-primary);
+          animation: pulse 1.2s infinite ease-in-out;
+        }
+
+        .modeToggle {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 11px;
+        }
+
+        .modeLabel {
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          opacity: 0.6;
+        }
+
+        .modePill {
+          display: inline-flex;
+          padding: 2px;
+          border-radius: 999px;
+          background: color-mix(
+            in oklab,
+            var(--card-bg-soft, rgba(15, 23, 42, 0.9)) 85%,
+            transparent
+          );
+          border: 1px solid
+            color-mix(in oklab, var(--card-border) 75%, transparent);
+          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02);
+        }
+
+        .modeBtn {
+          border: none;
+          background: transparent;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+          color: var(--fg-muted, #e5e7eb);
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          transition: background 0.15s ease, color 0.15s ease,
+            transform 0.12s ease;
+        }
+
+        .modeBtn:hover {
+          transform: translateY(-0.5px);
+        }
+
+        .modeBtn.active {
+          background: radial-gradient(
+            circle at 10% 0%,
+            var(--color-primary) 0%,
+            transparent 55%
+          );
+          color: #111827;
+        }
+
+        .modeBtn.active:nth-child(1) {
+          background: radial-gradient(
+            circle at 10% 0%,
+            #fb7185 0%,
+            transparent 55%
+          );
+          color: #111827;
+        }
+
+        .modeBtn.active:nth-child(2) {
+          background: radial-gradient(
+            circle at 10% 0%,
+            #38bdf8 0%,
+            transparent 55%
+          );
+          color: #0b1120;
+        }
+
+        .modeCount {
+          padding: 1px 6px;
+          border-radius: 999px;
+          font-size: 10px;
+          background: rgba(15, 23, 42, 0.2);
+        }
+
+        .error {
+          margin-bottom: 8px;
+          padding: 8px 10px;
+          border-radius: 10px;
+          font-size: 12px;
+          background: rgba(239, 68, 68, 0.08);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+          color: #fecaca;
         }
 
         .empty {
@@ -650,6 +849,37 @@ export default function BridgeArbitrageSignals({
           }
           100% {
             background-size: 0% 100%;
+          }
+        }
+
+        @keyframes pulse {
+          0% {
+            opacity: 0.2;
+            transform: scale(0.9);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          100% {
+            opacity: 0.2;
+            transform: scale(0.9);
+          }
+        }
+
+        @media (max-width: 900px) {
+          .bucketGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 640px) {
+          .head {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .bucketGrid {
+            grid-template-columns: minmax(0, 1fr);
           }
         }
       `}</style>
