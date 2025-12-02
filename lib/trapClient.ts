@@ -1,5 +1,4 @@
 // lib/trapClient.ts
-
 import { FullFieldName } from "./fullFields";
 
 export const DEFAULT_TRAP_URL = "http://localhost:5197";
@@ -30,9 +29,7 @@ async function fetchBridgeJson<T = any>(path: string): Promise<T> {
   const base = getBridgeBase();
 
   try {
-    const res = await fetch(`${base}${path}`, {
-      cache: "no-store",
-    });
+    const res = await fetch(`${base}${path}`, { cache: "no-store" });
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -67,10 +64,69 @@ export async function getTrapQuotes() {
   return fetchBridgeJson("/api/quotes");
 }
 
-/* ========= /api/strategy/{name}/stats ========= */
+/* ========= /api/strategy/{name}/stats (legacy; CSV) ========= */
 
 export async function getStrategyStats(strategy: string) {
-  return fetchBridgeJson<any[]>(`/api/strategy/${strategy}/stats`);
+  const s = (strategy ?? "").trim();
+  if (!s) throw <TrapError>{ type: "BAD_JSON", message: "Strategy is empty" };
+  return fetchBridgeJson<any[]>(`/api/strategy/${encodeURIComponent(s)}/stats`);
+}
+
+/* ========= ARBITRAGE: list (CSV -> list page) =========
+   NEW ENDPOINT (у мостi):
+   GET /api/strategy/arbitrage/list
+   returns: { strategy, updatedAt, count, items: [...] }
+*/
+export type ArbitrageListRow = Record<string, string>;
+
+type ArbitrageListResponse = {
+  strategy: string;
+  updatedAt: string | Date;
+  count: number;
+  items: any[];
+};
+
+export async function getArbitrageList(): Promise<ArbitrageListRow[]> {
+  const json = await fetchBridgeJson<ArbitrageListResponse>(
+    `/api/strategy/arbitrage/list`
+  );
+
+  const items = Array.isArray(json?.items) ? json.items : [];
+
+  // normalize: всі значення -> string
+  return items.map((r) => {
+    const obj: ArbitrageListRow = {};
+    for (const [k, v] of Object.entries(r ?? {})) {
+      obj[k] = v != null ? String(v) : "";
+    }
+    return obj;
+  });
+}
+
+/* ========= ARBITRAGE: per ticker (JSONL -> personal page) =========
+   EXISTING ENDPOINT:
+   GET /api/strategy/arbitrage/stats?ticker=AAPL
+   returns: { strategy, format, updatedAt, ticker, item }
+*/
+export type ArbitrageTickerStats = Record<string, any>;
+
+type ArbitrageTickerResponse = {
+  strategy: string;
+  format: "jsonl" | "csv";
+  updatedAt: string | Date;
+  ticker: string;
+  item: ArbitrageTickerStats | null;
+};
+
+export async function getArbitrageStatsByTicker(
+  ticker: string
+): Promise<ArbitrageTickerResponse> {
+  const t = (ticker ?? "").trim();
+  if (!t) throw <TrapError>{ type: "BAD_JSON", message: "Ticker is empty" };
+
+  return fetchBridgeJson<ArbitrageTickerResponse>(
+    `/api/strategy/arbitrage/stats?ticker=${encodeURIComponent(t)}`
+  );
 }
 
 /* ========= /api/universe-quotes ========= */
